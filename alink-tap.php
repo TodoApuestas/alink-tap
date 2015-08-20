@@ -2,18 +2,18 @@
 /**
  *
  * @package   Alink_Tap
- * @author    Alain Sanchez <asanchezg@inetzwerk.com>
+ * @author    Alain Sanchez <luka.ghost@gmail.com>
  * @license   GPL-2.0+
- * @link      http://www.inetzwerk.com
+ * @link      http://www.linkedin.com/in/mrbrazzi/
  * @copyright 2014 Alain Sanchez
  *
  * @wordpress-plugin
  * Plugin Name:       Alink Tap
  * Plugin URI:       http://www.todoapuestas.org
  * Description:       This plugin is a customization of <strong>KB Linker vTAP</strong> by Adam R. Brown to <strong>TodoApuestas.org</strong>. Looks for user-defined phrases in posts and automatically links them. Example: Link every occurrence of "TodoApuestas" to todoapuestas.org. It execute syncronizations task with TodoApuestas.org Server.
- * Version:           1.0.1.2
+ * Version:           1.1.0.1
  * Author:       Alain Sanchez
- * Author URI:       http://www.inetzwerk.com
+ * Author URI:       http://www.linkedin.com/in/mrbrazzi/
  * Text Domain:       alink-tap
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt

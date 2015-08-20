@@ -6,9 +6,9 @@
  * The User Interface to the end user.
  *
  * @package   Alink_Tap
- * @author    Alain Sanchez <asanchezg@inetzwerk.com>
+ * @author    Alain Sanchez <luka.ghost@gmail.com>
  * @license   GPL-2.0+
- * @link      http://www.inetzwerk.com
+ * @link      http://www.linkedin.com/in/mrbrazzi/
  * @copyright 2014 Alain Sanchez
  */
 ?>
@@ -39,17 +39,26 @@ include_once( dirname(__FILE__).'/../includes/remote-linked.php' );
 
         <form method="post" action="<?php echo admin_url( 'options-general.php?page=' . Alink_Tap::get_instance()->get_plugin_slug() ); ?>">
             <p>
-                <label for="domain"><?php _e('Website domain name', Alink_Tap::get_instance()->get_plugin_slug()) ?></label>
+                <label for="domain"><?php _e('Website domain name (traker)', Alink_Tap::get_instance()->get_plugin_slug()) ?></label>
                 <input type="text" id="domain" name="alink_tap_domain" value="<?php echo $domain ?>">
             </p>
             <p>
-                <label for="url_sync_link"><?php _e('Server url for synchronizations task', Alink_Tap::get_instance()->get_plugin_slug()) ?></label>
-                <input type="text" id="url_sync_link" name="alink_tap_url_sync_link" value="<?php echo $url_sync_link ?>" class="widefat">
+                <label for="tracked_web_category"><?php _e('Tracked web category', Alink_Tap::get_instance()->get_plugin_slug()) ?></label>
+                <select id="tracked_web_category" name="alink_tap_tracked_web_category" value="<?php echo $url_sync_link ?>">
+                    <option <?php if($tracked_web_category == 'apuestas'): ?>selected="selected"<?php endif;?> value="apuestas"><?php _e('Apuestas', Alink_Tap::get_instance()->get_plugin_slug()) ?></option>
+                    <option <?php if($tracked_web_category == 'casinos'): ?>selected="selected"<?php endif;?> value="casinos"><?php _e('Casinos', Alink_Tap::get_instance()->get_plugin_slug()) ?></option>
+                    <option <?php if($tracked_web_category == 'poker'): ?>selected="selected"<?php endif;?> value="poker"><?php _e('Poker', Alink_Tap::get_instance()->get_plugin_slug()) ?></option>
+                    <option <?php if($tracked_web_category == 'bingo'): ?>selected="selected"<?php endif;?> value="bingo"><?php _e('Bingo', Alink_Tap::get_instance()->get_plugin_slug()) ?></option>
+                </select>
+            </p>
+            <!--<p>
+                <label for="url_sync_link"><?php /*_e('Server url for synchronizations task', Alink_Tap::get_instance()->get_plugin_slug()) */?></label>
+                <input type="text" id="url_sync_link" name="alink_tap_url_sync_link" value="<?php /*echo $url_sync_link */?>" class="widefat">
             </p>
             <p>
-                <label for="url_get_country_from_ip"><?php _e('Url to check client\'s IP', Alink_Tap::get_instance()->get_plugin_slug()) ?></label>
-                <input type="text" id="url_get_country_from_ip" name="alink_tap_url_get_country_from_ip" value="<?php echo $url_get_country_from_ip; ?>" class="widefat">
-            </p>
+                <label for="url_get_country_from_ip"><?php /*_e('Url to check client\'s IP', Alink_Tap::get_instance()->get_plugin_slug()) */?></label>
+                <input type="text" id="url_get_country_from_ip" name="alink_tap_url_get_country_from_ip" value="<?php /*echo $url_get_country_from_ip; */?>" class="widefat">
+            </p>-->
             <p><input type="checkbox" <?php echo $remote_plurals ? 'checked="checked"' : ''; ?> name="alink_tap_remote_plurals" value="<?php echo $remote_plurals; ?>" /> <?php _e('Also link the keyword if it ends in <i>s</i> (i.e. plurals in certain languages)', Alink_Tap::get_instance()->get_plugin_slug()) ?></p>
 
             <p class="submit" style="width:420px;"><input type="submit" value="Submit &raquo;" /></p>

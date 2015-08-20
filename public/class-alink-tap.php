@@ -3,9 +3,9 @@
  * Plugin Name.
  *
  * @package   Alink_Tap
- * @author    Alain Sanchez <asanchezg@inetzwerk.com>
+ * @author    Alain Sanchez <luka.ghost@gmail.com>
  * @license   GPL-2.0+
- * @link      http://www.inetzwerk.com
+ * @link      http://www.linkedin.com/in/mrbrazzi/
  * @copyright 2014 Alain Sanchez
  */
 
@@ -17,18 +17,18 @@
  * functionality, then refer to `class-alink-tap-admin.php`
  *
  * @package Alink_Tap
- * @author  Alain Sanchez <asanchezg@inetzwerk.com>
+ * @author  Alain Sanchez <luka.ghost@gmail.com>
  */
 class Alink_Tap {
 
 	/**
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
-	 * @since   1.0.1
+	 * @since   1.1.0.1
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.0.1';
+	const VERSION = '1.1.0.1';
 
 	/**
 	 *
@@ -81,9 +81,10 @@ class Alink_Tap {
          */
         $this->default_options = array(
             'domain' => $_SERVER["HTTP_HOST"],
-            'url_sync_link' => 'http://www.todoapuestas.org/listBlogsLinksJson.php',
-            'url_get_country_from_ip' => 'http://www.todoapuestas.org/getCountryFromIP.php',
+            'url_sync_link' => 'http://www.todoapuestas.org/tdapuestas/web/api/blocks-bookies/%s/%s/listado-bonos-bookies.json/?access_token=%s&_=%s',
+            'url_get_country_from_ip' => 'http://www.todoapuestas.org/tdapuestas/web/api/geoip/country-by-ip.json/%s/?access_token=%s&_=%s',
             'plurals' => 1,
+            'tracked_web_category' => 'apuestas'
         );
 
 		/* Define custom functionality.
@@ -94,6 +95,7 @@ class Alink_Tap {
 		 * add_filter ( 'hook_name', 'your_filter', [priority], [accepted_args] );
 		 */
         add_action( 'sync_hourly_event', array( $this, 'remote_sync' ) );
+        add_action( 'alink_tap_remote_sync', array( $this, 'remote_sync' ) );
         add_action( 'wp' , array( $this, 'active_remote_sync'));
 
         add_filter( 'the_content', array( $this, 'execute_linker' ), 9 );
@@ -320,12 +322,18 @@ class Alink_Tap {
      * Execute synchronizations from todoapuestas.org server
      *
      * @since   1.0.1
+     * @updated 1.1.0.0
      * @param string $d
      * @return array|void
+     * @throws \Exception
      */
     public function remote_sync($d = null) {
         // do something every hour
         $option = get_option('alink_tap_linker_remote_info', $this->default_options);
+
+        $oauthAccessToken = $this->get_oauth_access_token();
+
+        $timestamp = new DateTime("now");
 
         $domain = $d;
         if(is_null($d) && empty($option['domain']))
@@ -333,41 +341,53 @@ class Alink_Tap {
         else if(!empty($option['domain']))
             $domain = $option['domain'];
 
-        $url_sync_link = esc_url($option['url_sync_link']);
-        $remote_plurals = $option['plurals'];
+//        $remote_plurals = $option['plurals'];
 
         if (preg_match('/\\b(https?|ftp):\/\/www\.(?P<domain>[-A-Z0-9.]+)\\z/i', $domain, $regs)) {
             $domain = $regs['domain'];
         }
 
         // Get values from TAP
-        $url = $url_sync_link."?domain=". $domain;
-        $atLinks = trim(file_get_contents($url));
-        $list_site_links = json_decode($atLinks, true);
+        $apiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], $domain, $oauthAccessToken, $timestamp->getTimestamp()));
+        $apiResponse = wp_remote_get($apiUrl);
+        if(strcmp($apiResponse['response']['code'], '200') != 0 || $apiResponse instanceof WP_Error){
+            throw new Exception('Invalid API response');
+        }
+        $list_site_links = json_decode($apiResponse['body'], true);
+        $atApiUrl = null;
         switch(preg_match('/^w{3}./', $domain)){
             case 1:
-                $url = $url_sync_link."?domain=".preg_replace('/^w{3}./','',$domain);
-                $atLinks = trim(file_get_contents($url));
+                $atApiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], preg_replace('/^w{3}./','',$domain), $oauthAccessToken, $timestamp->getTimestamp()));
                 break;
             default:
-                $url = $url_sync_link."?domain=www.".$domain;
-                $atLinks = trim(file_get_contents($url));
+                $atApiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], $domain, $oauthAccessToken, $timestamp->getTimestamp()));
                 break;
         }
-        $list_site_links = array_merge($list_site_links, json_decode($atLinks, true));
+        $atLinks = array();
+        if(strcmp($apiUrl, $atApiUrl) != 0){
+            $apiResponse = wp_remote_get($atApiUrl);
+            if(strcmp($apiResponse['response']['code'], '200') != 0){
+                throw new Exception('Invalid API response');
+            }
+            $atLinks = json_decode($apiResponse['body'], true);
+        }
+
+        $list_site_links = array_merge($list_site_links, $atLinks);
 
         if(is_null($d) && !empty($list_site_links)){
             update_option('alink_tap_linker_remote', $list_site_links);
         }
 
-        if(!is_null($d))
+        if(!is_null($d)){
             return $list_site_links;
+        }
     }
 
     /**
      * Filter the content and change de occurrences of keyword to links
      *
      * @since   1.0.1
+     * @updated 1.1.0.1
      * @param $content
      * @return string
      */
@@ -375,8 +395,9 @@ class Alink_Tap {
         global $alink_tap_special_chars,$alink_tap_title_text;
         $pairs = $text = $plurals = $licencias = null;
 
-        $list_site_links = get_option('alink_tap_linker_remote');
+        @ini_set('memory_limit', -1);
 
+        $list_site_links = get_option('alink_tap_linker_remote');
         if ( empty($list_site_links))
             return $content;
 
@@ -389,6 +410,10 @@ class Alink_Tap {
 
         // needed below...
 
+        $oauthAccessToken = $this->get_oauth_access_token();
+
+        $timestamp = new DateTime("now");
+
         $usedUrls = array();
 
         $currentUrl = site_url(); // may not work on all hosting setups.
@@ -397,21 +422,25 @@ class Alink_Tap {
 
         $remote_info = get_option('alink_tap_linker_remote_info', $this->default_options);
         $plurals = $remote_info['plurals'];
-        $url_get_country_from_ip = esc_url($remote_info['url_get_country_from_ip']);
 
-        $userUrl = $url_get_country_from_ip."?ip=". $ip;
+        $apiUrl = esc_url(sprintf($remote_info['url_get_country_from_ip'], $ip, $oauthAccessToken, $timestamp->getTimestamp()));
+        $apiResponse = wp_remote_get($apiUrl);
 
-        $country = trim(file_get_contents($userUrl));
+        $country = json_decode($apiResponse['body'], true);
+
+//        $url_get_country_from_ip = esc_url($remote_info['url_get_country_from_ip']);
+//        $userUrl = $url_get_country_from_ip."?ip=". $ip;
+//        $country = trim(file_get_contents($userUrl));
 
 //        foreach ($pairs as $keyword => $url_array){
         foreach ( $list_site_links as $house ){
             $keyword = '';
-            if(isset($house['name']))
-                $keyword = $house['name'];
+            if(isset($house['nombre']))
+                $keyword = $house['nombre'];
 
             // Compruebo si es un usuario de Spain. Si lo es, compruebo si la key es con licencia_esp, si no, paso al siguiente
 
-            if($country == "Spain" && !empty($house)){
+            if(isset($country['country']) && strcmp($country['country'],'Spain') == 0 && !empty($house)){
                 $url = $house['urles'];
                 if(!$house['licencia']) continue;
             } else {
@@ -517,13 +546,39 @@ class Alink_Tap {
         }
 
         // get rid of our '&&&' things.
-
         $content = str_replace( '&&&', '', $content);
+
+        @ini_restore('memory_limit');
 
         return $content;
     }
 
     public function get_default_options() {
         return $this->default_options;
+    }
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    private function get_oauth_access_token()
+    {
+        $oauthUrl = get_option('TAP_OAUTH_CLIENT_CREDENTIALS_URL');
+        $publicId = get_option('TAP_PUBLIC_ID');
+        $secretKey = get_option('TAP_SECRET_KEY');
+        if(empty($publicId) || empty($secretKey)){
+            throw new Exception('No public o secret key given');
+        }
+
+        $oauthUrl = sprintf($oauthUrl, $publicId, $secretKey);
+        $oauthResponse = wp_remote_get($oauthUrl);
+        $oauthResponseBody = json_decode($oauthResponse['body']);
+        $oauthAccessToken = null;
+        if(!is_object($oauthResponseBody)){
+            throw new Exception('Invalid OAuth response');
+        }
+        $oauthAccessToken = $oauthResponseBody->access_token;
+
+        return $oauthAccessToken;
     }
 }

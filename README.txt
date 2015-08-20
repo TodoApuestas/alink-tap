@@ -3,8 +3,8 @@ Contributors: mrbrazzi, todoapuestas
 Donate link: http://todoapuestas.org/
 Tags: link
 Requires at least: 3.5.1
-Tested up to: 3.9.1
-Stable tag: 1.0.1.2
+Tested up to: 4.2.2
+Stable tag: 1.1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -92,6 +92,12 @@ Nothing for now
 
 == Changelog ==
 
+= 1.1.0.1 =
+* Added some minor changes
+
+= 1.1.0.0 =
+* Added support for TAP Api REST's services through OAuth authentication/authorization
+
 = 1.0.1.2 =
 * Commented unnecessary actions execution
 
@@ -109,8 +115,7 @@ Nothing for now
 
 == Upgrade Notice ==
 
-= 1.0.1 =
-You must upgrade to this version. This is a minor update but with multiple refactorings.
+Upgrade to lastest version 1.1.0.0 as soon as posible. See Changelog section for details
 
 
 == Arbitrary section ==
