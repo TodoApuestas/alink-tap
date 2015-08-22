@@ -395,7 +395,7 @@ class Alink_Tap {
         global $alink_tap_special_chars,$alink_tap_title_text;
         $pairs = $text = $plurals = $licencias = null;
 
-        @ini_set('memory_limit', -1);
+        ini_set('memory_limit', -1);
 
         $list_site_links = get_option('alink_tap_linker_remote');
         if ( empty($list_site_links))
@@ -548,7 +548,7 @@ class Alink_Tap {
         // get rid of our '&&&' things.
         $content = str_replace( '&&&', '', $content);
 
-        @ini_restore('memory_limit');
+        ini_restore('memory_limit');
 
         return $content;
     }
