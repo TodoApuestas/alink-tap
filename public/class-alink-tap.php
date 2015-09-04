@@ -28,7 +28,7 @@ class Alink_Tap {
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.2.0';
+	const VERSION = '1.1.3';
 
 	/**
 	 *
@@ -430,7 +430,7 @@ class Alink_Tap {
 
             // Compruebo si es un usuario de Spain. Si lo es, compruebo si la key es con licencia_esp, si no, paso al siguiente
 
-            if(isset($country['country']) && strcmp($country['country'],'Spain') === 0 && !empty($house)){
+            if(null != $country && isset($country['country']) && strcmp($country['country'],'Spain') === 0 && !empty($house)){
                 $url = $house['urles'];
                 if(!$house['licencia']) continue;
             } else {
@@ -553,6 +553,7 @@ class Alink_Tap {
      */
     private function get_oauth_access_token()
     {
+        session_start();
         if(isset($_SESSION['TAP_OAUTH_CLIENT'])){
             $now = new DateTime('now');
             if($now->getTimestamp() <= intval($_SESSION['TAP_OAUTH_CLIENT']['expires_in'])){
@@ -595,13 +596,14 @@ class Alink_Tap {
 
     private function get_country_by_ip($remote_info)
     {
+        session_start();
         $ip = $_SERVER['REMOTE_ADDR'];
         if(isset($_SESSION['TAP_ALINK_TAP'])){
             if(strcmp($ip, $_SESSION['TAP_ALINK_TAP']['client_ip']) === 0){
                 $country = $_SESSION['TAP_ALINK_TAP']['client_country'];
                 return $country;
             }
-            unset($_SESSION['TAP_OAUTH_CLIENT']);
+            unset($_SESSION['TAP_ALINK_TAP']);
         }
 
         $oauthAccessToken = $this->get_oauth_access_token();
@@ -610,7 +612,7 @@ class Alink_Tap {
 
         $apiUrl = esc_url(sprintf($remote_info['url_get_country_from_ip'], $ip, $oauthAccessToken, $now->getTimestamp()));
         $apiResponse = wp_remote_get($apiUrl);
-        if($apiResponse instanceof WP_Error || strcmp($apiResponse['response']['code'], '200') !== 0){
+        if($apiResponse instanceof WP_Error || (!empty($apiResponse['body']) && strcmp($apiResponse['response']['code'], '200') !== 0)){
             throw new \Exception('Invalid API response');
         }
         $country = json_decode($apiResponse['body'], true);
