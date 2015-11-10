@@ -24,11 +24,11 @@ class Alink_Tap {
 	/**
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
-	 * @since   1.1.0.1
+	 * @since   1.1.4
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.3';
+	const VERSION = '1.1.4';
 
 	/**
 	 *
@@ -553,7 +553,8 @@ class Alink_Tap {
      */
     private function get_oauth_access_token()
     {
-        session_start();
+        $session_id = session_id();
+        if(empty($session_id)) @session_start();
         if(isset($_SESSION['TAP_OAUTH_CLIENT'])){
             $now = new DateTime('now');
             if($now->getTimestamp() <= intval($_SESSION['TAP_OAUTH_CLIENT']['expires_in'])){
@@ -596,7 +597,8 @@ class Alink_Tap {
 
     private function get_country_by_ip($remote_info)
     {
-        session_start();
+        $session_id = session_id();
+        if(empty($session_id)) @session_start();
         $ip = $_SERVER['REMOTE_ADDR'];
         if(isset($_SESSION['TAP_ALINK_TAP'])){
             if(strcmp($ip, $_SESSION['TAP_ALINK_TAP']['client_ip']) === 0){
