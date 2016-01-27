@@ -24,11 +24,11 @@ class Alink_Tap {
 	/**
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
-	 * @since   1.1.4
+	 * @since   1.1.5
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.4';
+	const VERSION = '1.1.5';
 
 	/**
 	 *
@@ -94,9 +94,8 @@ class Alink_Tap {
 		 *
 		 * add_filter ( 'hook_name', 'your_filter', [priority], [accepted_args] );
 		 */
-        add_action( 'sync_hourly_event', array( $this, 'remote_sync' ) );
-        add_action( 'alink_tap_remote_sync', array( $this, 'remote_sync' ) );
         add_action( 'wp' , array( $this, 'active_remote_sync'));
+        add_action( 'alink_tap_hourly_remote_sync', array( $this, 'remote_sync' ) );
 
         add_filter( 'the_content', array( $this, 'execute_linker' ), 9 );
 
@@ -269,7 +268,7 @@ class Alink_Tap {
 		delete_option('alink_tap_linker_remote_info');
         delete_option('alink_tap_linker_remote');
 
-        remove_action( 'sync_hourly_event', array( self::$instance, 'remote_sync' ) );
+        remove_action( 'alink_tap_hourly_remote_sync', array( self::$instance, 'remote_sync' ) );
         remove_action( 'wp' , array( self::$instance, 'active_remote_sync'));
 
         remove_filter( 'the_content', array( self::$instance, 'execute_linker' ) );
@@ -313,8 +312,8 @@ class Alink_Tap {
      * @since   1.0.1
      */
     public function active_remote_sync() {
-        if ( !wp_next_scheduled( 'sync_hourly_event' ) ) {
-            wp_schedule_event(time(), 'hourly', 'sync_hourly_event');
+        if ( !wp_next_scheduled( 'alink_tap_hourly_remote_sync' ) ) {
+            wp_schedule_event(time(), 'hourly', 'alink_tap_hourly_remote_sync');
         }
     }
 
