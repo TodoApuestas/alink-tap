@@ -553,7 +553,7 @@ class Alink_Tap {
     private function get_oauth_access_token()
     {
         $session_id = session_id();
-        if(empty($session_id)) @session_start();
+        if(empty($session_id) && !headers_sent()) @session_start();
         if(isset($_SESSION['TAP_OAUTH_CLIENT'])){
             $now = new DateTime('now');
             if($now->getTimestamp() <= intval($_SESSION['TAP_OAUTH_CLIENT']['expires_in'])){
@@ -597,7 +597,7 @@ class Alink_Tap {
     private function get_country_by_ip($remote_info)
     {
         $session_id = session_id();
-        if(empty($session_id)) @session_start();
+        if(empty($session_id) && !headers_sent()) @session_start();
         $ip = $_SERVER['REMOTE_ADDR'];
         if(isset($_SESSION['TAP_ALINK_TAP'])){
             if(strcmp($ip, $_SESSION['TAP_ALINK_TAP']['client_ip']) === 0){
