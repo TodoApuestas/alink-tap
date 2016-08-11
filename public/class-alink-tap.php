@@ -28,7 +28,7 @@ class Alink_Tap {
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.5';
+	const VERSION = '1.1.6';
 
 	/**
 	 *
@@ -98,6 +98,7 @@ class Alink_Tap {
         add_action( 'alink_tap_hourly_remote_sync', array( $this, 'remote_sync' ) );
 
         add_filter( 'the_content', array( $this, 'execute_linker' ), 9 );
+		add_filter( 'alink_tap_execute_linker', array( $this, 'execute_linker' ) );
 
 	}
 
