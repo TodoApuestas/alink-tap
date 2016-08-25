@@ -24,11 +24,11 @@ class Alink_Tap {
 	/**
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
-	 * @since   1.1.5
+	 * @since   1.1.7
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.6';
+	const VERSION = '1.1.7';
 
 	/**
 	 *

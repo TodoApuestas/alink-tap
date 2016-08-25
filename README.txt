@@ -3,7 +3,7 @@ Contributors: mrbrazzi, todoapuestas
 Donate link: http://todoapuestas.org/
 Tags: link
 Requires at least: 3.5.1
-Tested up to: 4.5.3
+Tested up to: 4.6
 Stable tag: 1.1.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -91,6 +91,9 @@ Nothing for now
 
 
 == Changelog ==
+
+= 1.1.7 =
+* Tested up to Wordpress 4.6
 
 = 1.1.6 =
 * Tested up to Wordpress 4.5.3
