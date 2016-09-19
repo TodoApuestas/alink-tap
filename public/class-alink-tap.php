@@ -24,11 +24,11 @@ class Alink_Tap {
 	/**
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
-	 * @since   1.1.7
+	 * @since   1.1.8
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.7';
+	const VERSION = '1.1.8';
 
 	/**
 	 *
@@ -80,7 +80,7 @@ class Alink_Tap {
          * @since     1.0.1
          */
         $this->default_options = array(
-            'domain' => $_SERVER["HTTP_HOST"],
+            'domain' => strtolower( parse_url( $_SERVER["HTTP_HOST"] , PHP_URL_HOST ) ),
             'url_sync_link' => 'http://www.todoapuestas.org/tdapuestas/web/api/blocks-bookies/%s/%s/listado-bonos-bookies.json/?access_token=%s&_=%s',
             'url_get_country_from_ip' => 'http://www.todoapuestas.org/tdapuestas/web/api/geoip/country-by-ip.json/%s/?access_token=%s&_=%s',
             'plurals' => 1,
@@ -107,7 +107,7 @@ class Alink_Tap {
 	 *
 	 * @since    1.0.0
 	 *
-	 * @return    Plugin slug variable.
+	 * @return  string   Plugin slug variable.
 	 */
 	public function get_plugin_slug() {
 		return $this->plugin_slug;
@@ -239,9 +239,7 @@ class Alink_Tap {
 		global $wpdb;
 
 		// get an array of blog ids
-		$sql = "SELECT blog_id FROM $wpdb->blogs
-			WHERE archived = '0' AND spam = '0'
-			AND deleted = '0'";
+		$sql = "SELECT blog_id FROM $wpdb->blogs WHERE archived = '0' AND spam = '0' AND deleted = '0'";
 
 		return $wpdb->get_col( $sql );
 
@@ -322,7 +320,8 @@ class Alink_Tap {
      * Execute synchronizations from todoapuestas.org server
      *
      * @since   1.0.1
-     * @updated 1.1.0.0
+     * @updated 1.1.8
+     *
      * @param string $d
      * @return array|void
      * @throws \Exception
@@ -336,23 +335,31 @@ class Alink_Tap {
         $timestamp = new DateTime("now");
 
         $domain = $d;
-        if(is_null($d) && empty($option['domain']))
-            $domain = $_SERVER["HTTP_HOST"];
-        else if(!empty($option['domain']))
-            $domain = $option['domain'];
+        if(is_null($d) && empty($option['domain'])){
+	        $domain = strtolower( parse_url( $_SERVER["HTTP_HOST"] , PHP_URL_HOST ) );
+        }else {
+        	if(!empty($option['domain'])){
+		        $domain = $option['domain'];
+	        }else{
+		        $domain = strtolower( parse_url( $_SERVER["HTTP_HOST"] , PHP_URL_HOST ) );
+	        }
+        }
 
 //        $remote_plurals = $option['plurals'];
-
-        if (preg_match('/\\b(https?|ftp):\/\/www\.(?P<domain>[-A-Z0-9.]+)\\z/i', $domain, $regs)) {
-            $domain = $regs['domain'];
-        }
 
         // Get values from TAP
         $apiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], $domain, $oauthAccessToken, $timestamp->getTimestamp()));
         $apiResponse = wp_remote_get($apiUrl);
-        if(strcmp($apiResponse['response']['code'], '200') != 0 || $apiResponse instanceof WP_Error){
-            throw new Exception('Invalid API response');
-        }
+        
+	    $errors = array();
+	    if ( $apiResponse instanceof WP_Error ) {
+		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
+	    }else {
+		    if ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
+			    $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
+		    }
+	    }
+        
         $list_site_links = json_decode($apiResponse['body'], true);
         $atApiUrl = null;
         switch(preg_match('/^w{3}./', $domain)){
@@ -363,12 +370,17 @@ class Alink_Tap {
                 $atApiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], $domain, $oauthAccessToken, $timestamp->getTimestamp()));
                 break;
         }
+        
         $atLinks = array();
         if(strcmp($apiUrl, $atApiUrl) != 0){
             $apiResponse = wp_remote_get($atApiUrl);
-            if(strcmp($apiResponse['response']['code'], '200') != 0){
-                throw new Exception('Invalid API response');
-            }
+	        if ( $apiResponse instanceof WP_Error ) {
+		        $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
+	        }else {
+		        if ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
+			        $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
+		        }
+	        }
             $atLinks = json_decode($apiResponse['body'], true);
         }
 
@@ -388,6 +400,7 @@ class Alink_Tap {
      *
      * @since   1.0.1
      * @updated 1.1.7
+     *
      * @param $content
      * @return string
      */
