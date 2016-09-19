@@ -24,11 +24,11 @@ class Alink_Tap {
 	/**
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
-	 * @since   1.1.10
+	 * @since   1.1.11
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.10';
+	const VERSION = '1.1.11';
 
 	/**
 	 *
@@ -320,7 +320,7 @@ class Alink_Tap {
      * Execute synchronizations from todoapuestas.org server
      *
      * @since   1.0.1
-     * @updated 1.1.10
+     * @updated 1.1.11
      *
      * @param string $d
      * @return array|void
@@ -348,18 +348,22 @@ class Alink_Tap {
 	    $oauthAccessToken = $this->get_oauth_access_token();
         $apiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], $domain, $oauthAccessToken, $timestamp->getTimestamp()));
         $apiResponse = wp_remote_get($apiUrl);
-        
+	
 	    $errors = array();
 	    if ( $apiResponse instanceof WP_Error ) {
 		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
 	    } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
 		    $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
-	    } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['body']['error'], 'access_denied' ) != 0 ){
+	    } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
 		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
 	    }
+	
+	    $list_site_links = array();
+	    if(empty($errors)) {
+		    $list_site_links = json_decode($apiResponse['body'], true);
+	    }
         
-        $list_site_links = json_decode($apiResponse['body'], true);
-        $atApiUrl = null;
+	    $atApiUrl = null;
         switch(preg_match('/^w{3}./', $domain)){
             case 1:
                 $domain = preg_replace('/^w{3}./','',$domain);
@@ -372,11 +376,12 @@ class Alink_Tap {
 	    $atApiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], $domain, $oauthAccessToken, $timestamp->getTimestamp()));
         if(strcmp($apiUrl, $atApiUrl) != 0){
 	        $apiResponse = wp_remote_get($atApiUrl);
+	
 	        if ( $apiResponse instanceof WP_Error ) {
 		        $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
 	        } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
 		        $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
-	        } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['body']['error'], 'access_denied' ) != 0 ){
+	        } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
 		        $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
 	        }
         }
@@ -402,7 +407,7 @@ class Alink_Tap {
      * Filter the content and change de occurrences of keyword to links
      *
      * @since   1.0.1
-     * @updated 1.1.7
+     * @updated 1.1.11
      *
      * @param $content
      * @return string
@@ -564,7 +569,7 @@ class Alink_Tap {
 	 */
 	function get_oauth_access_token()
 	{
-		$oauthAccessToken  = null;
+		$oauthAccessToken = null;
 		$session_id = session_id();
 		if(empty($session_id) && !headers_sent()) @session_start();
 		if(isset($_SESSION['TAP_OAUTH_CLIENT'])){
@@ -581,6 +586,7 @@ class Alink_Tap {
 		$oauthUrl = get_option('TAP_OAUTH_CLIENT_CREDENTIALS_URL');
 		$publicId = get_option('TAP_PUBLIC_ID');
 		$secretKey = get_option('TAP_SECRET_KEY');
+		
 		if(empty($publicId) || empty($secretKey)){
 			$errors[] = sprintf(_( 'No TAP PUBLIC ID or TAP SECRET KEY given. You must set TAP API access in <a href="%s">API REST</a> section', 'epic' ), esc_url(wp_customize_url()));
 		}
@@ -589,11 +595,12 @@ class Alink_Tap {
 		if(empty($errors)) {
 			$oauthUrl = sprintf( $oauthUrl, $publicId, $secretKey );
 			$oauthResponse = wp_remote_get( $oauthUrl );
+			
 			if ( $oauthResponse instanceof WP_Error ) {
 				$errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $oauthResponse->get_error_messages() );
 			} elseif ( !empty($oauthResponse['body']) && strcmp( $oauthResponse['response']['code'], '200' ) != 0 ){
 				$errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $oauthResponse['response']['code'], $oauthResponse['body'] );
-			} elseif ( !empty($oauthResponse['body']) && strcmp( $oauthResponse['body']['error'], 'access_denied' ) != 0 ){
+			} elseif ( !empty($oauthResponse['body']) && isset($oauthResponse['body']['error']) && !empty($oauthResponse['body']['error']) ){
 				$errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $oauthResponse['body']['error_description'] );
 			}
 		}
@@ -603,19 +610,18 @@ class Alink_Tap {
 			$oauthResponseBody = json_decode( $oauthResponse['body'] );
 			if ( $oauthResponseBody instanceof WP_Error ) {
 				$errors[] = sprintf( _( 'Invalid API response. <pre>%s</pre>', 'epic' ), $oauthResponse->get_error_messages() );
-			}else {
-				if ( ! is_object( $oauthResponseBody ) ){
-					ob_start();
-					var_dump($oauthResponseBody);
-					$error = ob_get_contents();
-					ob_end_clean();
-					$errors[] = sprintf( _( 'Invalid API response. <pre>%s</pre>', 'epic' ), $error);
-				}
+			}elseif ( ! is_object( $oauthResponseBody ) ) {
+				ob_start();
+				var_dump( $oauthResponseBody );
+				$error = ob_get_contents();
+				ob_end_clean();
+				$errors[] = sprintf( _( 'Invalid API response. <pre>%s</pre>', 'epic' ), $error );
 			}
-			$oauthAccessToken = $oauthResponseBody->access_token;
 		}
 		
 		if(empty($errors)) {
+			$oauthAccessToken = $oauthResponseBody->access_token;
+			
 			if ( ! isset( $_SESSION['TAP_OAUTH_CLIENT'] ) ) {
 				$now = new DateTime( 'now' );
 				$_SESSION['TAP_OAUTH_CLIENT'] = array(
@@ -683,7 +689,7 @@ class Alink_Tap {
 		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
 	    } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
 		    $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
-	    } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['body']['error'], 'access_denied' ) != 0 ){
+	    } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
 		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
 	    }
 	
