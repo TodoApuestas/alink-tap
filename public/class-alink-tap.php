@@ -24,11 +24,11 @@ class Alink_Tap {
 	/**
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
-	 * @since   1.1.8
+	 * @since   1.1.9
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.8';
+	const VERSION = '1.1.9';
 
 	/**
 	 *
@@ -80,7 +80,7 @@ class Alink_Tap {
          * @since     1.0.1
          */
         $this->default_options = array(
-            'domain' => strtolower( parse_url( $_SERVER["HTTP_HOST"] , PHP_URL_HOST ) ),
+            'domain' => $_SERVER["HTTP_HOST"],
             'url_sync_link' => 'http://www.todoapuestas.org/tdapuestas/web/api/blocks-bookies/%s/%s/listado-bonos-bookies.json/?access_token=%s&_=%s',
             'url_get_country_from_ip' => 'http://www.todoapuestas.org/tdapuestas/web/api/geoip/country-by-ip.json/%s/?access_token=%s&_=%s',
             'plurals' => 1,
@@ -335,16 +335,15 @@ class Alink_Tap {
         $timestamp = new DateTime("now");
 
         $domain = $d;
-        if(is_null($d) && empty($option['domain'])){
+        if(empty($d) && empty($option['domain'])){
 	        $domain = strtolower( parse_url( $_SERVER["HTTP_HOST"] , PHP_URL_HOST ) );
-        }else {
-        	if(!empty($option['domain'])){
-		        $domain = $option['domain'];
-	        }else{
-		        $domain = strtolower( parse_url( $_SERVER["HTTP_HOST"] , PHP_URL_HOST ) );
-	        }
+        }elseif ( empty($d) && !empty($option['domain']) ){
+	        $domain = $option['domain'];
         }
 
+        if(empty($domain)){
+	        $domain = $_SERVER["HTTP_HOST"];
+        }
 //        $remote_plurals = $option['plurals'];
 
         // Get values from TAP
@@ -557,8 +556,7 @@ class Alink_Tap {
     }
 	
 	/**
-	 * @return null
-	 * @throws Exception
+	 * @return null|string
 	 */
 	function get_oauth_access_token()
 	{
@@ -628,6 +626,9 @@ class Alink_Tap {
 		return $oauthAccessToken;
 	}
 	
+	/**
+	 * @param array $errors
+	 */
 	private function display_error_message($errors)
 	{
 		if(!empty($errors)) {
@@ -644,7 +645,12 @@ class Alink_Tap {
 			} );
 		}
 	}
-
+	
+	/**
+	 * @param array $remote_info
+	 *
+	 * @return null|string
+	 */
     private function get_country_by_ip($remote_info)
     {
         $session_id = session_id();
