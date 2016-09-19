@@ -387,7 +387,7 @@ class Alink_Tap {
      * Filter the content and change de occurrences of keyword to links
      *
      * @since   1.0.1
-     * @updated 1.1.0.1
+     * @updated 1.1.7
      * @param $content
      * @return string
      */
@@ -418,10 +418,6 @@ class Alink_Tap {
 
         $country = $this->get_country_by_ip($remote_info);
 
-//        $url_get_country_from_ip = esc_url($remote_info['url_get_country_from_ip']);
-//        $userUrl = $url_get_country_from_ip."?ip=". $ip;
-//        $country = trim(file_get_contents($userUrl));
-
 //        foreach ($pairs as $keyword => $url_array){
         foreach ( $list_site_links as $house ){
             $keyword = '';
@@ -430,7 +426,7 @@ class Alink_Tap {
 
             // Compruebo si es un usuario de Spain. Si lo es, compruebo si la key es con licencia_esp, si no, paso al siguiente
 
-            if(null != $country && isset($country['country']) && strcmp($country['country'],'Spain') === 0 && !empty($house)){
+            if(!empty($country) && strcmp($country, 'Spain') == 0 && !empty($house)){
                 $url = $house['urles'];
                 if(!$house['licencia']) continue;
             } else {
@@ -546,54 +542,95 @@ class Alink_Tap {
     public function get_default_options() {
         return $this->default_options;
     }
-
-    /**
-     * @return string
-     * @throws \Exception
-     */
-    private function get_oauth_access_token()
-    {
-        $session_id = session_id();
-        if(empty($session_id) && !headers_sent()) @session_start();
-        if(isset($_SESSION['TAP_OAUTH_CLIENT'])){
-            $now = new DateTime('now');
-            if($now->getTimestamp() <= intval($_SESSION['TAP_OAUTH_CLIENT']['expires_in'])){
-                $oauthAccessToken = $_SESSION['TAP_OAUTH_CLIENT']['access_token'];
-                return $oauthAccessToken;
-            }
-            unset($_SESSION['TAP_OAUTH_CLIENT']);
-        }
-
-        $oauthUrl = get_option('TAP_OAUTH_CLIENT_CREDENTIALS_URL');
-        $publicId = get_option('TAP_PUBLIC_ID');
-        $secretKey = get_option('TAP_SECRET_KEY');
-        if(empty($publicId) || empty($secretKey)){
-            throw new Exception('No public or secret key given');
-        }
-
-        $oauthUrl = sprintf($oauthUrl, $publicId, $secretKey);
-        $oauthResponse = wp_remote_get($oauthUrl);
-        if($oauthResponse instanceof WP_Error || strcmp($oauthResponse['response']['code'], '200') !== 0){
-            throw new \Exception('Invalid OAuth response');
-        }
-
-        $oauthResponseBody = json_decode($oauthResponse['body']);
-        $oauthAccessToken = null;
-        if($oauthResponseBody instanceof WP_Error || !is_object($oauthResponseBody)){
-            throw new \Exception('Invalid OAuth access token');
-        }
-        $oauthAccessToken = $oauthResponseBody->access_token;
-
-        if(!isset($_SESSION['TAP_OAUTH_CLIENT'])){
-            $now = new DateTime('now');
-            $_SESSION['TAP_OAUTH_CLIENT'] = array(
-                'access_token' => $oauthAccessToken,
-                'expires_in' => $now->getTimestamp() + intval($oauthResponseBody->expires_in)
-            );
-        }
-
-        return $oauthAccessToken;
-    }
+	
+	/**
+	 * @return null
+	 * @throws Exception
+	 */
+	function get_oauth_access_token()
+	{
+		$oauthAccessToken  = null;
+		$session_id = session_id();
+		if(empty($session_id) && !headers_sent()) @session_start();
+		if(isset($_SESSION['TAP_OAUTH_CLIENT'])){
+			$now = new DateTime('now');
+			if($now->getTimestamp() <= intval($_SESSION['TAP_OAUTH_CLIENT']['expires_in'])){
+				$oauthAccessToken = $_SESSION['TAP_OAUTH_CLIENT']['access_token'];
+				return $oauthAccessToken;
+			}
+			unset($_SESSION['TAP_OAUTH_CLIENT']);
+		}
+		
+		$errors = array();
+		
+		$oauthUrl = get_option('TAP_OAUTH_CLIENT_CREDENTIALS_URL');
+		$publicId = get_option('TAP_PUBLIC_ID');
+		$secretKey = get_option('TAP_SECRET_KEY');
+		if(empty($publicId) || empty($secretKey)){
+			$errors[] = sprintf(_( 'No TAP PUBLIC ID or TAP SECRET KEY given. You must set TAP API access in <a href="%s">API REST</a> section', 'epic' ), esc_url(wp_customize_url()));
+		}
+		
+		$oauthResponse = null;
+		if(empty($errors)) {
+			$oauthUrl = sprintf( $oauthUrl, $publicId, $secretKey );
+			$oauthResponse = wp_remote_get( $oauthUrl );
+			if ( $oauthResponse instanceof WP_Error ) {
+				$errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $oauthResponse->get_error_messages() );
+			}else {
+				if ( !empty($oauthResponse['body']) && strcmp( $oauthResponse['response']['code'], '200' ) != 0 ){
+					$errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: <pre>%s</pre>', 'epic' ), $oauthResponse['response']['code'], $oauthResponse['body'] );
+				}
+			}
+		}
+		
+		$oauthResponseBody = null;
+		if(empty($errors)) {
+			$oauthResponseBody = json_decode( $oauthResponse['body'] );
+			if ( $oauthResponseBody instanceof WP_Error ) {
+				$errors[] = sprintf( _( 'Invalid API response. <pre>%s</pre>', 'epic' ), $oauthResponse->get_error_messages() );
+			}else {
+				if ( ! is_object( $oauthResponseBody ) ){
+					ob_start();
+					var_dump($oauthResponseBody);
+					$error = ob_get_contents();
+					ob_end_clean();
+					$errors[] = sprintf( _( 'Invalid API response. <pre>%s</pre>', 'epic' ), $error);
+				}
+			}
+			$oauthAccessToken = $oauthResponseBody->access_token;
+		}
+		
+		if(empty($errors)) {
+			if ( ! isset( $_SESSION['TAP_OAUTH_CLIENT'] ) ) {
+				$now = new DateTime( 'now' );
+				$_SESSION['TAP_OAUTH_CLIENT'] = array(
+					'access_token' => $oauthAccessToken,
+					'expires_in'   => $now->getTimestamp() + intval( $oauthResponseBody->expires_in )
+				);
+			}
+		}
+		
+		$this->display_error_message($errors);
+		
+		return $oauthAccessToken;
+	}
+	
+	private function display_error_message($errors)
+	{
+		if(!empty($errors)) {
+			$error_notice = '<div class="notice notice-error"><h3>';
+			$error_notice .= sprintf(_n('Error al acceder a la API REST:', '%s errores al acceder a la API REST:', count($errors), 'epic'), count($errors));
+			$error_notice .= '</h3><ul>';
+			foreach ( $errors as $error ) {
+				$error_notice .= sprintf( '<li>%s</li>', $error );
+			}
+			$error_notice .= '</ul></div>';
+			
+			add_action( 'admin_notices', function () use ( $error_notice ) {
+				echo $error_notice;
+			} );
+		}
+	}
 
     private function get_country_by_ip($remote_info)
     {
@@ -609,23 +646,37 @@ class Alink_Tap {
         }
 
         $oauthAccessToken = $this->get_oauth_access_token();
+	    if(empty($oauthAccessToken)){
+	    	return null;
+	    }
 
         $now = new DateTime("now");
 
         $apiUrl = esc_url(sprintf($remote_info['url_get_country_from_ip'], $ip, $oauthAccessToken, $now->getTimestamp()));
         $apiResponse = wp_remote_get($apiUrl);
-        if($apiResponse instanceof WP_Error || (!empty($apiResponse['body']) && strcmp($apiResponse['response']['code'], '200') !== 0)){
-            throw new \Exception('Invalid API response');
-        }
-        $country = json_decode($apiResponse['body'], true);
-
-        if(!isset($_SESSION['TAP_ALINK_TAP'])){
-            $_SESSION['TAP_ALINK_TAP'] = array(
-                'client_ip' => $ip,
-                'client_country' => $country
-            );
-        }
-
-        return $country;
+        	
+	    $errors = array();
+	    if ( $apiResponse instanceof WP_Error ) {
+		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
+	    }else {
+	    	if ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
+			    $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
+		    }
+	    }
+	
+	    if ( empty( $errors ) ) {
+		    $country = json_decode( $apiResponse['body'], true );
+		
+		    if ( ! isset( $_SESSION['TAP_ALINK_TAP'] ) ) {
+			    $_SESSION['TAP_ALINK_TAP'] = array(
+				    'client_ip'      => $ip,
+				    'client_country' => $country
+			    );
+		    }
+		
+		    return $country;
+	    }
+	
+	    $this->display_error_message( $errors );
     }
 }
