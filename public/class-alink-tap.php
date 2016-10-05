@@ -24,11 +24,11 @@ class Alink_Tap {
 	/**
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
-	 * @since   1.1.11
+	 * @since   1.1.12
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.11';
+	const VERSION = '1.1.12';
 
 	/**
 	 *
@@ -351,11 +351,11 @@ class Alink_Tap {
 	
 	    $errors = array();
 	    if ( $apiResponse instanceof WP_Error ) {
-		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
+		    $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_message() );
 	    } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
-		    $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
+		    $errors[] = sprintf( __( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
 	    } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
-		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
+		    $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
 	    }
 	
 	    $list_site_links = array();
@@ -378,11 +378,11 @@ class Alink_Tap {
 	        $apiResponse = wp_remote_get($atApiUrl);
 	
 	        if ( $apiResponse instanceof WP_Error ) {
-		        $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
+		        $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_message() );
 	        } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
-		        $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
+		        $errors[] = sprintf( __( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
 	        } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
-		        $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
+		        $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
 	        }
         }
         
@@ -588,7 +588,7 @@ class Alink_Tap {
 		$secretKey = get_option('TAP_SECRET_KEY');
 		
 		if(empty($publicId) || empty($secretKey)){
-			$errors[] = sprintf(_( 'No TAP PUBLIC ID or TAP SECRET KEY given. You must set TAP API access in <a href="%s">API REST</a> section', 'epic' ), esc_url(wp_customize_url()));
+			$errors[] = sprintf( __( 'No TAP PUBLIC ID or TAP SECRET KEY given. You must set TAP API access in <a href="%s">API REST</a> section', 'epic' ), esc_url(wp_customize_url()) );
 		}
 		
 		$oauthResponse = null;
@@ -597,11 +597,11 @@ class Alink_Tap {
 			$oauthResponse = wp_remote_get( $oauthUrl );
 			
 			if ( $oauthResponse instanceof WP_Error ) {
-				$errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $oauthResponse->get_error_messages() );
+				$errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $oauthResponse->get_error_message() );
 			} elseif ( !empty($oauthResponse['body']) && strcmp( $oauthResponse['response']['code'], '200' ) != 0 ){
-				$errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $oauthResponse['response']['code'], $oauthResponse['body'] );
+				$errors[] = sprintf( __( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $oauthResponse['response']['code'], $oauthResponse['body'] );
 			} elseif ( !empty($oauthResponse['body']) && isset($oauthResponse['body']['error']) && !empty($oauthResponse['body']['error']) ){
-				$errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $oauthResponse['body']['error_description'] );
+				$errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $oauthResponse['body']['error_description'] );
 			}
 		}
 		
@@ -609,13 +609,13 @@ class Alink_Tap {
 		if(empty($errors)) {
 			$oauthResponseBody = json_decode( $oauthResponse['body'] );
 			if ( $oauthResponseBody instanceof WP_Error ) {
-				$errors[] = sprintf( _( 'Invalid API response. <pre>%s</pre>', 'epic' ), $oauthResponse->get_error_messages() );
+				$errors[] = sprintf( __( 'Invalid API response. <pre>%s</pre>', 'epic' ), $oauthResponse->get_error_message() );
 			}elseif ( ! is_object( $oauthResponseBody ) ) {
 				ob_start();
 				var_dump( $oauthResponseBody );
 				$error = ob_get_contents();
 				ob_end_clean();
-				$errors[] = sprintf( _( 'Invalid API response. <pre>%s</pre>', 'epic' ), $error );
+				$errors[] = sprintf( __( 'Invalid API response. <pre>%s</pre>', 'epic' ), $error );
 			}
 		}
 		
@@ -686,11 +686,11 @@ class Alink_Tap {
         	
 	    $errors = array();
 	    if ( $apiResponse instanceof WP_Error ) {
-		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_messages() );
+		    $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_message() );
 	    } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
-		    $errors[] = sprintf( _( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
+		    $errors[] = sprintf( __( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
 	    } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
-		    $errors[] = sprintf( _( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
+		    $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
 	    }
 	
 	    if ( empty( $errors ) ) {
