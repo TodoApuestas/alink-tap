@@ -1,10 +1,10 @@
 === Alink Tap ===
 Contributors: mrbrazzi, todoapuestas
-Donate link: http://todoapuestas.org/
+Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=brazzisoft.com@gmail.com&lc=US&item_name=For%20improve%20Wordpress%20plugin%20Alink%20Tap&currency_code=USD&no_note=0&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHostedGuest
 Tags: link
 Requires at least: 3.5.1
-Tested up to: 4.6.1
-Stable tag: 1.1.12
+Tested up to: 5.4.2
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -91,6 +91,11 @@ Nothing for now
 
 
 == Changelog ==
+
+= 1.2.1 =
+* Tested up to Wordpress 5.4.2
+* Added several improvements
+* Removed unnecessary code
 
 = 1.1.12 =
 * Fixed php notice detected

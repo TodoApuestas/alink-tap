@@ -35,8 +35,6 @@ include_once( dirname(__FILE__).'/../includes/remote-linked.php' );
 
         <p>Alink Tap will link phrases you specify to sites you specify. For example, you could make it so that whenever "TodoApuestas" occurs in a post it is automatically linked to todoapuestas.org.</p>
 
-<!--        <h3>Remote linked</h3>-->
-
         <form method="post" action="<?php echo admin_url( 'options-general.php?page=' . Alink_Tap::get_instance()->get_plugin_slug() ); ?>">
             <p>
                 <label for="domain"><?php _e('Website domain name (traker)', Alink_Tap::get_instance()->get_plugin_slug()) ?></label>
@@ -44,44 +42,18 @@ include_once( dirname(__FILE__).'/../includes/remote-linked.php' );
             </p>
             <p>
                 <label for="tracked_web_category"><?php _e('Tracked web category', Alink_Tap::get_instance()->get_plugin_slug()) ?></label>
-                <select id="tracked_web_category" name="alink_tap_tracked_web_category" value="<?php echo $url_sync_link ?>">
+                <select id="tracked_web_category" name="alink_tap_tracked_web_category">
                     <option <?php if($tracked_web_category == 'apuestas'): ?>selected="selected"<?php endif;?> value="apuestas"><?php _e('Apuestas', Alink_Tap::get_instance()->get_plugin_slug()) ?></option>
                     <option <?php if($tracked_web_category == 'casinos'): ?>selected="selected"<?php endif;?> value="casinos"><?php _e('Casinos', Alink_Tap::get_instance()->get_plugin_slug()) ?></option>
                     <option <?php if($tracked_web_category == 'poker'): ?>selected="selected"<?php endif;?> value="poker"><?php _e('Poker', Alink_Tap::get_instance()->get_plugin_slug()) ?></option>
                     <option <?php if($tracked_web_category == 'bingo'): ?>selected="selected"<?php endif;?> value="bingo"><?php _e('Bingo', Alink_Tap::get_instance()->get_plugin_slug()) ?></option>
                 </select>
             </p>
-            <!--<p>
-                <label for="url_sync_link"><?php /*_e('Server url for synchronizations task', Alink_Tap::get_instance()->get_plugin_slug()) */?></label>
-                <input type="text" id="url_sync_link" name="alink_tap_url_sync_link" value="<?php /*echo $url_sync_link */?>" class="widefat">
-            </p>
-            <p>
-                <label for="url_get_country_from_ip"><?php /*_e('Url to check client\'s IP', Alink_Tap::get_instance()->get_plugin_slug()) */?></label>
-                <input type="text" id="url_get_country_from_ip" name="alink_tap_url_get_country_from_ip" value="<?php /*echo $url_get_country_from_ip; */?>" class="widefat">
-            </p>-->
             <p><input type="checkbox" <?php echo $remote_plurals ? 'checked="checked"' : ''; ?> name="alink_tap_remote_plurals" value="<?php echo $remote_plurals; ?>" /> <?php _e('Also link the keyword if it ends in <i>s</i> (i.e. plurals in certain languages)', Alink_Tap::get_instance()->get_plugin_slug()) ?></p>
 
             <p class="submit" style="width:420px;"><input type="submit" value="Submit &raquo;" /></p>
 
         </form>
-
-<!--        <h3>Local linked</h3>-->
-<!---->
-<!--        <p>Enter your keyword-URL pairs in the box below. Each pair should appear on its own line. Separate each keyword from its respective link with "->". Look at the bottom of this page for important details. Below are a few examples to get you going. Note that the link to Google will open in a new window, since it is followed with "&nbsp;_blank" (note the space).</p>-->
-<!---->
-<!--        <blockquote><pre>--><?php //echo $sample; ?><!--</pre></blockquote>-->
-<!---->
-<!--        <p>Alright, knock yourself out:</p>-->
-<!---->
-<!--        --><?php ////echo '://'. $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']?>
-<!--        <form method="post" action="--><?php //echo admin_url( 'options-general.php?page=' . Alink_Tap::get_instance()->get_plugin_slug() ); ?><!--">-->
-<!--            <textarea id="alink_linker" name="alink_tap_linker_text" rows="10" cols="45" class="widefat">--><?php //echo $linker_text; ?><!--</textarea>-->
-<!---->
-<!--            <p><input type="checkbox" --><?php //echo $local_plurals ? 'checked="checked"' : ''; ?><!-- name="alink_plurals" id="alink_tap_local_plurals" value="--><?php //echo $local_plurals; ?><!--" /> Also link the keyword if it ends in <i>s</i> (i.e. plurals in certain languages)</p>-->
-<!---->
-<!--            <p class="submit" style="width:420px;"><input type="submit" value="Submit &raquo;" /></p>-->
-<!---->
-<!--        </form>-->
 
         <p>Considerations:</p>
 

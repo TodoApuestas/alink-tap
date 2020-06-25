@@ -19,11 +19,16 @@ if(isset($_POST['alink_tap_domain'])){
     $options = array('domain' => $domain, 'tracked_web_category' => $tracked_web_category, 'plurals' => $remote_plurals);
     update_option('alink_tap_linker_remote_info', array_merge($old_options, $options));
 
+    set_theme_mod('tap_tracker_domain', $domain);
+    set_theme_mod('tap_tracker_web_category', $tracked_web_category);
+
+    do_action('alink_tap_hourly_remote_sync');
+
     print $message_updated;
 }else{
     $option = get_option('alink_tap_linker_remote_info', Alink_Tap::get_instance()->get_default_options());
 
-    $domain = $option['domain'];
-    $tracked_web_category = esc_url($option['tracked_web_category']);
+    $domain = get_theme_mod('tap_tracker_domain'); //$option['domain'];
+    $tracked_web_category = get_theme_mod('tap_tracker_web_category'); // esc_url($option['tracked_web_category']);
     $remote_plurals = $option['plurals'];
 }

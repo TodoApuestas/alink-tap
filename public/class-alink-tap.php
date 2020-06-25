@@ -25,10 +25,11 @@ class Alink_Tap {
 	 * Plugin version, used for cache-busting of style and script file references.
 	 *
 	 * @since   1.1.12
+   * @updated 1.2.1
 	 *
 	 * @var     string
 	 */
-	const VERSION = '1.1.12';
+	const VERSION = '1.2.1';
 
 	/**
 	 *
@@ -78,11 +79,9 @@ class Alink_Tap {
          * Define the default options
          *
          * @since     1.0.1
+         * @updated   1.2
          */
         $this->default_options = array(
-            'domain' => $_SERVER["HTTP_HOST"],
-            'url_sync_link' => 'http://www.todoapuestas.org/tdapuestas/web/api/blocks-bookies/%s/%s/listado-bonos-bookies.json/?access_token=%s&_=%s',
-            'url_get_country_from_ip' => 'http://www.todoapuestas.org/tdapuestas/web/api/geoip/country-by-ip.json/%s/?access_token=%s&_=%s',
             'plurals' => 1,
             'tracked_web_category' => 'apuestas'
         );
@@ -98,7 +97,7 @@ class Alink_Tap {
         add_action( 'alink_tap_hourly_remote_sync', array( $this, 'remote_sync' ) );
 
         add_filter( 'the_content', array( $this, 'execute_linker' ), 9 );
-		add_filter( 'alink_tap_execute_linker', array( $this, 'execute_linker' ) );
+		add_filter( 'alink_tap_execute_linker', array( $this, 'execute_linker' ), 10, 2 );
 
 	}
 
@@ -321,85 +320,17 @@ class Alink_Tap {
      *
      * @since   1.0.1
      * @updated 1.1.11
+     * @updated 1.2
      *
      * @param string $d
      * @return array|void
      * @throws \Exception
      */
     public function remote_sync($d = null) {
-        // do something every hour
-        $option = get_option('alink_tap_linker_remote_info', $this->default_options);
+        do_action('rest_client_tap_request_bookies');
 
-        $timestamp = new DateTime("now");
-
-        $domain = $d;
-        if(empty($d) && empty($option['domain'])){
-	        $domain = strtolower( parse_url( $_SERVER["HTTP_HOST"] , PHP_URL_HOST ) );
-        } elseif ( empty($d) && !empty($option['domain']) ){
-	        $domain = $option['domain'];
-        }
-
-        if(empty($domain)){
-	        $domain = $_SERVER["HTTP_HOST"];
-        }
-//        $remote_plurals = $option['plurals'];
-
-        // Get values from TAP
-	    $oauthAccessToken = $this->get_oauth_access_token();
-        $apiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], $domain, $oauthAccessToken, $timestamp->getTimestamp()));
-        $apiResponse = wp_remote_get($apiUrl);
-	
-	    $errors = array();
-	    if ( $apiResponse instanceof WP_Error ) {
-		    $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_message() );
-	    } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
-		    $errors[] = sprintf( __( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
-	    } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
-		    $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
-	    }
-	
-	    $list_site_links = array();
-	    if(empty($errors)) {
-		    $list_site_links = json_decode($apiResponse['body'], true);
-	    }
-        
-	    $atApiUrl = null;
-        switch(preg_match('/^w{3}./', $domain)){
-            case 1:
-                $domain = preg_replace('/^w{3}./','',$domain);
-                break;
-            default:
-                break;
-        }
-        
-        $oauthAccessToken = $this->get_oauth_access_token();
-	    $atApiUrl = esc_url(sprintf($option['url_sync_link'], $option['tracked_web_category'], $domain, $oauthAccessToken, $timestamp->getTimestamp()));
-        if(strcmp($apiUrl, $atApiUrl) != 0){
-	        $apiResponse = wp_remote_get($atApiUrl);
-	
-	        if ( $apiResponse instanceof WP_Error ) {
-		        $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_message() );
-	        } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
-		        $errors[] = sprintf( __( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
-	        } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
-		        $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
-	        }
-        }
-        
-        if(empty($errors)) {
-	        $atLinks = json_decode($apiResponse['body'], true);
-        	
-		    $list_site_links = array_merge($list_site_links, $atLinks);
-		
-		    if(is_null($d) && !empty($list_site_links)){
-			    update_option('alink_tap_linker_remote', $list_site_links);
-		    }
-	    }
-	    
-	    $this->display_error_message($errors);
-	
 	    if(!is_null($d)){
-		    return $list_site_links;
+		    return get_option('TAP_BOOKIES');
 	    }
     }
 
@@ -408,51 +339,62 @@ class Alink_Tap {
      *
      * @since   1.0.1
      * @updated 1.1.11
+     * @updated 1.2
      *
-     * @param $content
+     * @param string $content
+     * @param bool $simple
      * @return string
      */
-    public function execute_linker($content) {
-        global $alink_tap_special_chars,$alink_tap_title_text;
+    public function execute_linker($content, $simple = false) {
+        global $alink_tap_special_chars, $alink_tap_title_text, $post;
         $pairs = $text = $plurals = $licencias = null;
 
-        ini_set('memory_limit', -1);
-
-        $list_site_links = get_option('alink_tap_linker_remote');
-        if ( empty($list_site_links) )
+        if (!in_the_loop() && !is_main_query() && $simple === false) {
             return $content;
-
-        // let's make use of that special chars setting.
-        if (is_array($alink_tap_special_chars)){
-            foreach ($alink_tap_special_chars as $char => $code){
-                $content = str_replace($code,$char,$content);
-            }
         }
 
-        // needed below...
-        $remote_info = get_option('alink_tap_linker_remote_info', $this->default_options);
-        $plurals = $remote_info['plurals'];
+        $cache_key = $simple ? 'alink_tap_content_simple_'. $post->ID : 'alink_tap_content_'. $post->ID;
+        $cached_content = wp_cache_get($cache_key, 'the_content');
+        if (false !== $cached_content) {
+            return $cached_content;
+        }
 
-        $usedUrls = array();
+        try {
+            $list_site_links = get_option('TAP_BOOKIES');
+            if (empty($list_site_links))
+                return $content;
 
-        $currentUrl = site_url(); // may not work on all hosting setups.
+            // let's make use of that special chars setting.
+            if (is_array($alink_tap_special_chars)) {
+                foreach ($alink_tap_special_chars as $char => $code) {
+                    $content = str_replace($code, $char, $content);
+                }
+            }
 
-        $country = $this->get_country_by_ip($remote_info);
+            // needed below...
+            $remote_info = get_option('alink_tap_linker_remote_info', $this->default_options);
+            $plurals = $remote_info['plurals'];
+
+            $usedUrls = array();
+
+            $currentUrl = site_url(); // may not work on all hosting setups.
+
+            $country = apply_filters('rest_client_tap_check_ip', 'TAP_ALINK_TAP', null);
 
 //        foreach ($pairs as $keyword => $url_array){
-        foreach ( $list_site_links as $house ){
-            $keyword = '';
-            if(isset($house['nombre']))
-                $keyword = $house['nombre'];
+            foreach ($list_site_links as $house) {
+                $keyword = '';
+                if (isset($house['nombre']))
+                    $keyword = $house['nombre'];
 
-            // Compruebo si es un usuario de Spain. Si lo es, compruebo si la key es con licencia_esp, si no, paso al siguiente
+                // Compruebo si es un usuario de Spain. Si lo es, compruebo si la key es con licencia_esp, si no, paso al siguiente
 
-            if(!empty($country) && strcmp($country, 'Spain') == 0 && !empty($house)){
-                $url = $house['urles'];
-                if(!$house['licencia']) continue;
-            } else {
-                $url = $house['url'];
-            }
+                if (!empty($country) && strcmp($country, 'Spain') == 0 && !empty($house)) {
+                    $url = $house['urles'];
+                    if (!$house['licencia']) continue;
+                } else {
+                    $url = $house['url'];
+                }
 
 //            if (in_array( $url, $usedUrls )) // don't link to the same URL more than once
 //                continue;
@@ -462,250 +404,107 @@ class Alink_Tap {
 //                continue;
 //            }
 
-            if ($url == $currentUrl){ // don't link a page to itself
-                $usedUrls[] = $url;
-                continue;
+                if ($url == $currentUrl) { // don't link a page to itself
+                    $usedUrls[] = $url;
+                    continue;
+                }
+
+                // first, let's check whether we've got a "target" attribute specified.
+
+                if (false !== strpos($url, ' ')) {    // Let's not waste CPU resources unless we see a ' ' in the URL:
+                    $target = trim(substr($url, strpos($url, ' ')));
+                    $target = ' target="' . $target . '"';
+                    $url = substr($url, 0, strpos($url, ' '));
+                } else {
+                    $target = '';
+                }
+
+                // let's escape any '&' in the URL.
+
+                $url = str_replace('&amp;', '&', $url); // this might seem unnecessary, but it prevents the next line from double-escaping the &
+
+                $url = str_replace('&', '&amp;', $url);
+
+
+                // we don't want to link the keyword if it is already linked.
+
+                // so let's find all instances where the keyword is in a link and precede it with &&&, which will be sufficient to avoid linking it. We use &&&, since WP would pass that
+
+                // to us as &amp;&amp;&amp; (if it occured in a post), so it would never be in the $content on its own.
+
+                // this has two steps. First, look for the keyword as linked text:
+
+                $content = preg_replace('|(<a[^>]+>)(.*)(' . $keyword . ')(.*)(</a[^>]*>)|Ui', '$1$2&&&$3$4$5', $content);
+
+
+                // Next, look for the keyword inside tags. E.g. if they're linking every occurrence of "Google" manually, we don't want to find
+
+                // <a href="http://google.com"> and change it to <a href="http://<a href="http://www.google.com">.com">
+
+                // More broadly, we don't want them linking anything that might be in a tag. (e.g. linking "strong" would screw up <strong>).
+
+                // if you get problems with KB linker creating links where it shouldn't, this is the regex you should tinker with, most likely. Here goes:
+
+                $content = preg_replace('|(<[^>]*)(' . $keyword . ')(.*>)|Ui', '$1&&&$2$3', $content);
+
+
+                // I'm sure a true master of regular expressions wouldn't need the previous two steps, and would simply write the replacement expression (below) better. But this works for me.
+
+                // set the title attribute:
+
+                if (ALINK_TAP_USE_TITLES)
+                    $title = ' title="' . $alink_tap_title_text['before'] . $alink_tap_title_text['after'] . '"';
+
+                // now that we've taken the keyword out of any links it appears in, let's look for the keyword elsewhere.
+
+                if (1 != $plurals) {     // we do basically the same thing whether we're looking for plurals or not. Let's do non-plurals option first:
+
+                    $content = preg_replace('|(?<=[\s>;\'])(' . $keyword . ')(?=[\s<&,!\';:\./])|i', '<a href="' . $url . '" class="alink-tp"' . $target . $title . ' rel="nofollow">$1</a>', $content/*, 1*/);    // that "1" at the end limits it to replacing the keyword only once per post => We quit this in TAP!!!!!
+
+                    /* some notes about that regular expression to make modifying it easier for you if you're new to these things:
+
+                    (?<=[\s>;"\'])
+
+                        (?<=	marks it as a lookbehind assertion
+
+                        to ensure that we are linking only complete words, we want keyword preceded by one of space, tag (>), entity (;) or certain kinds of punctuation (escaped with \ when necessary)
+
+                        Note that '&' is NOT one of the allowed lookbehinds (or our '&&&' trick wouldn't work)
+
+                    (?=[\s<&.,\'";:\-])
+
+                        (?=	marks this as a lookahead assertion
+
+                        again, we link only complete words. Must be followed by space, tag (<), entity (&), or certain kinds of punctuation.
+
+                        Note that some of the punctuations are escaped with \
+
+                    */
+
+
+                } else {    // if they want us to look for plurals too:
+
+                    // this regex is almost identical to the non-plurals one, we just add an s? where necessary:
+
+                    $content = preg_replace('|(?<=[\s>;\'])(' . $keyword . 's?)(?=[\s<&,!\';:\./])|i', '<a href="' . $url . '" class="alink-tp"' . $target . $title . ' rel="nofollow">$1</a>', $content/*, 1*/);    // that "1" at the end limits it to replacing once per post.
+
+                }
+
             }
 
-            // first, let's check whether we've got a "target" attribute specified.
+            // get rid of our '&&&' things.
+            $content = str_replace( '&&&', '', $content);
 
-            if (false!==strpos( $url, ' ' ) ){	// Let's not waste CPU resources unless we see a ' ' in the URL:
-                $target = trim(   substr( $url, strpos($url,' ') )   );
-                $target = ' target="'.$target.'"';
-                $url = substr( $url, 0, strpos($url,' ') );
-            }else{
-                $target='';
-            }
-
-            // let's escape any '&' in the URL.
-
-            $url = str_replace( '&amp;', '&', $url ); // this might seem unnecessary, but it prevents the next line from double-escaping the &
-
-            $url = str_replace( '&', '&amp;', $url );
-
-
-            // we don't want to link the keyword if it is already linked.
-
-            // so let's find all instances where the keyword is in a link and precede it with &&&, which will be sufficient to avoid linking it. We use &&&, since WP would pass that
-
-            // to us as &amp;&amp;&amp; (if it occured in a post), so it would never be in the $content on its own.
-
-            // this has two steps. First, look for the keyword as linked text:
-
-            $content = preg_replace( '|(<a[^>]+>)(.*)('.$keyword.')(.*)(</a[^>]*>)|Ui', '$1$2&&&$3$4$5', $content);
-
-
-
-            // Next, look for the keyword inside tags. E.g. if they're linking every occurrence of "Google" manually, we don't want to find
-
-            // <a href="http://google.com"> and change it to <a href="http://<a href="http://www.google.com">.com">
-
-            // More broadly, we don't want them linking anything that might be in a tag. (e.g. linking "strong" would screw up <strong>).
-
-            // if you get problems with KB linker creating links where it shouldn't, this is the regex you should tinker with, most likely. Here goes:
-
-            $content = preg_replace( '|(<[^>]*)('.$keyword.')(.*>)|Ui', '$1&&&$2$3', $content);
-
-
-            // I'm sure a true master of regular expressions wouldn't need the previous two steps, and would simply write the replacement expression (below) better. But this works for me.
-
-            // set the title attribute:
-
-            if (ALINK_TAP_USE_TITLES)
-                $title = ' title="'.$alink_tap_title_text['before'].$alink_tap_title_text['after'].'"';
-
-            // now that we've taken the keyword out of any links it appears in, let's look for the keyword elsewhere.
-
-            if ( 1 != $plurals ){	 // we do basically the same thing whether we're looking for plurals or not. Let's do non-plurals option first:
-
-                $content = preg_replace( '|(?<=[\s>;\'])('.$keyword.')(?=[\s<&,!\';:\./])|i', '<a href="'.$url.'" class="alink-tp"'.$target.$title.' rel="nofollow">$1</a>', $content/*, 1*/);	// that "1" at the end limits it to replacing the keyword only once per post => We quit this in TAP!!!!!
-
-                /* some notes about that regular expression to make modifying it easier for you if you're new to these things:
-
-                (?<=[\s>;"\'])
-
-                    (?<=	marks it as a lookbehind assertion
-
-                    to ensure that we are linking only complete words, we want keyword preceded by one of space, tag (>), entity (;) or certain kinds of punctuation (escaped with \ when necessary)
-
-                    Note that '&' is NOT one of the allowed lookbehinds (or our '&&&' trick wouldn't work)
-
-                (?=[\s<&.,\'";:\-])
-
-                    (?=	marks this as a lookahead assertion
-
-                    again, we link only complete words. Must be followed by space, tag (<), entity (&), or certain kinds of punctuation.
-
-                    Note that some of the punctuations are escaped with \
-
-                */
-
-
-
-            }else{	// if they want us to look for plurals too:
-
-                // this regex is almost identical to the non-plurals one, we just add an s? where necessary:
-
-                $content = preg_replace( '|(?<=[\s>;\'])('.$keyword.'s?)(?=[\s<&,!\';:\./])|i', '<a href="'.$url.'" class="alink-tp"'.$target.$title.' rel="nofollow">$1</a>', $content/*, 1*/);	// that "1" at the end limits it to replacing once per post.
-
-            }
-
+        } catch (\Exception $e) {
+            //do nothing for now
         }
 
-        // get rid of our '&&&' things.
-        $content = str_replace( '&&&', '', $content);
-
-        ini_restore('memory_limit');
+        wp_cache_set( $cache_key, $content );
 
         return $content;
     }
 
     public function get_default_options() {
         return $this->default_options;
-    }
-	
-	/**
-	 * @return null|string
-	 */
-	function get_oauth_access_token()
-	{
-		$oauthAccessToken = null;
-		$session_id = session_id();
-		if(empty($session_id) && !headers_sent()) @session_start();
-		if(isset($_SESSION['TAP_OAUTH_CLIENT'])){
-			$now = new DateTime('now');
-			if($now->getTimestamp() <= intval($_SESSION['TAP_OAUTH_CLIENT']['expires_in'])){
-				$oauthAccessToken = $_SESSION['TAP_OAUTH_CLIENT']['access_token'];
-				return $oauthAccessToken;
-			}
-			unset($_SESSION['TAP_OAUTH_CLIENT']);
-		}
-		
-		$errors = array();
-		
-		$oauthUrl = get_option('TAP_OAUTH_CLIENT_CREDENTIALS_URL');
-		$publicId = get_option('TAP_PUBLIC_ID');
-		$secretKey = get_option('TAP_SECRET_KEY');
-		
-		if(empty($publicId) || empty($secretKey)){
-			$errors[] = sprintf( __( 'No TAP PUBLIC ID or TAP SECRET KEY given. You must set TAP API access in <a href="%s">API REST</a> section', 'epic' ), esc_url(wp_customize_url()) );
-		}
-		
-		$oauthResponse = null;
-		if(empty($errors)) {
-			$oauthUrl = sprintf( $oauthUrl, $publicId, $secretKey );
-			$oauthResponse = wp_remote_get( $oauthUrl );
-			
-			if ( $oauthResponse instanceof WP_Error ) {
-				$errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $oauthResponse->get_error_message() );
-			} elseif ( !empty($oauthResponse['body']) && strcmp( $oauthResponse['response']['code'], '200' ) != 0 ){
-				$errors[] = sprintf( __( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $oauthResponse['response']['code'], $oauthResponse['body'] );
-			} elseif ( !empty($oauthResponse['body']) && isset($oauthResponse['body']['error']) && !empty($oauthResponse['body']['error']) ){
-				$errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $oauthResponse['body']['error_description'] );
-			}
-		}
-		
-		$oauthResponseBody = null;
-		if(empty($errors)) {
-			$oauthResponseBody = json_decode( $oauthResponse['body'] );
-			if ( $oauthResponseBody instanceof WP_Error ) {
-				$errors[] = sprintf( __( 'Invalid API response. <pre>%s</pre>', 'epic' ), $oauthResponse->get_error_message() );
-			}elseif ( ! is_object( $oauthResponseBody ) ) {
-				ob_start();
-				var_dump( $oauthResponseBody );
-				$error = ob_get_contents();
-				ob_end_clean();
-				$errors[] = sprintf( __( 'Invalid API response. <pre>%s</pre>', 'epic' ), $error );
-			}
-		}
-		
-		if(empty($errors)) {
-			$oauthAccessToken = $oauthResponseBody->access_token;
-			
-			if ( ! isset( $_SESSION['TAP_OAUTH_CLIENT'] ) ) {
-				$now = new DateTime( 'now' );
-				$_SESSION['TAP_OAUTH_CLIENT'] = array(
-					'access_token' => $oauthAccessToken,
-					'expires_in'   => $now->getTimestamp() + intval( $oauthResponseBody->expires_in )
-				);
-			}
-		}
-		
-		$this->display_error_message($errors);
-		
-		return $oauthAccessToken;
-	}
-	
-	/**
-	 * @param array $errors
-	 */
-	private function display_error_message($errors)
-	{
-		if(!empty($errors)) {
-			$error_notice = '<div class="notice notice-error"><h3>';
-			$error_notice .= sprintf(_n('Error al acceder a la API REST:', '%s errores al acceder a la API REST:', count($errors), 'epic'), count($errors));
-			$error_notice .= '</h3><ul>';
-			foreach ( $errors as $error ) {
-				$error_notice .= sprintf( '<li>%s</li>', $error );
-			}
-			$error_notice .= '</ul></div>';
-			
-			add_action( 'admin_notices', function () use ( $error_notice ) {
-				echo $error_notice;
-			} );
-		}
-	}
-	
-	/**
-	 * @param array $remote_info
-	 *
-	 * @return null|string
-	 */
-    private function get_country_by_ip($remote_info)
-    {
-        $session_id = session_id();
-        if(empty($session_id) && !headers_sent()) @session_start();
-        $ip = $_SERVER['REMOTE_ADDR'];
-        if(isset($_SESSION['TAP_ALINK_TAP'])){
-            if(strcmp($ip, $_SESSION['TAP_ALINK_TAP']['client_ip']) === 0){
-                $country = $_SESSION['TAP_ALINK_TAP']['client_country'];
-                return $country;
-            }
-            unset($_SESSION['TAP_ALINK_TAP']);
-        }
-
-        $oauthAccessToken = $this->get_oauth_access_token();
-	    if(empty($oauthAccessToken)){
-	    	return null;
-	    }
-
-        $now = new DateTime("now");
-
-        $apiUrl = esc_url(sprintf($remote_info['url_get_country_from_ip'], $ip, $oauthAccessToken, $now->getTimestamp()));
-        $apiResponse = wp_remote_get($apiUrl);
-        	
-	    $errors = array();
-	    if ( $apiResponse instanceof WP_Error ) {
-		    $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse->get_error_message() );
-	    } elseif ( !empty($apiResponse['body']) && strcmp( $apiResponse['response']['code'], '200' ) != 0 ){
-		    $errors[] = sprintf( __( 'Invalid API response. Code: %s. Body content: %s', 'epic' ), $apiResponse['response']['code'], $apiResponse['body'] );
-	    } elseif ( !empty($apiResponse['body']) && isset($apiResponse['body']['error']) && !empty($apiResponse['body']['error']) ){
-		    $errors[] = sprintf( __( 'Invalid API response. %s', 'epic' ), $apiResponse['body']['error_description'] );
-	    }
-	
-	    if ( empty( $errors ) ) {
-		    $country = json_decode( $apiResponse['body'], true );
-		
-		    if ( ! isset( $_SESSION['TAP_ALINK_TAP'] ) ) {
-			    $_SESSION['TAP_ALINK_TAP'] = array(
-				    'client_ip'      => $ip,
-				    'client_country' => $country
-			    );
-		    }
-		
-		    return $country;
-	    }
-	
-	    $this->display_error_message( $errors );
     }
 }
