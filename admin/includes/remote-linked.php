@@ -8,6 +8,7 @@
  * @copyright 2014 Alain Sanchez
  */
 
+$errors = false;
 $domain = $tracked_web_category = $remote_plurals = '';
 
 if(isset($_POST['alink_tap_domain'])){
@@ -24,7 +25,11 @@ if(isset($_POST['alink_tap_domain'])){
 
     do_action('alink_tap_hourly_remote_sync');
 
-    print $message_updated;
+    if (array_key_exists('REST_CLIENT_TAP_ERRORS', $_SESSION)) {
+        $errors = $_SESSION['REST_CLIENT_TAP_ERRORS'];
+    }
+
+    print $errors ? '' : $message_updated;
 }else{
     $option = get_option('alink_tap_linker_remote_info', Alink_Tap::get_instance()->get_default_options());
 
@@ -32,3 +37,5 @@ if(isset($_POST['alink_tap_domain'])){
     $tracked_web_category = get_theme_mod('tap_tracker_web_category'); // esc_url($option['tracked_web_category']);
     $remote_plurals = $option['plurals'];
 }
+
+$bookies = get_option('TAP_BOOKIES');

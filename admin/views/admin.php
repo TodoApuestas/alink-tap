@@ -23,7 +23,6 @@
 
 $message_updated = '<div id="message" class="updated fade"><p><strong>Alink Tap options updated.</strong> <a href="'.get_bloginfo('url').'">View site &raquo;</a></p></div>';
 
-//include_once( dirname(__FILE__).'/../includes/local-linked.php' );
 include_once( dirname(__FILE__).'/../includes/remote-linked.php' );
 
 ?>
@@ -31,7 +30,7 @@ include_once( dirname(__FILE__).'/../includes/remote-linked.php' );
 
 	<h2><?php echo esc_html( get_admin_page_title() ); ?></h2>
 
-	<div class="wrap">
+	<div class="card">
 
         <p>Alink Tap will link phrases you specify to sites you specify. For example, you could make it so that whenever "TodoApuestas" occurs in a post it is automatically linked to todoapuestas.org.</p>
 
@@ -51,7 +50,7 @@ include_once( dirname(__FILE__).'/../includes/remote-linked.php' );
             </p>
             <p><input type="checkbox" <?php echo $remote_plurals ? 'checked="checked"' : ''; ?> name="alink_tap_remote_plurals" value="<?php echo $remote_plurals; ?>" /> <?php _e('Also link the keyword if it ends in <i>s</i> (i.e. plurals in certain languages)', Alink_Tap::get_instance()->get_plugin_slug()) ?></p>
 
-            <p class="submit" style="width:420px;"><input type="submit" value="Submit &raquo;" /></p>
+            <p class="submit"><input type="submit" value="Submit &raquo;" /></p>
 
         </form>
 
@@ -79,4 +78,41 @@ include_once( dirname(__FILE__).'/../includes/remote-linked.php' );
 
     </div>
 
+<?php if($errors) :?>
+    <div class="card widefat">
+        <h3>Errors detected</h3>
+        <ul>
+        <?php foreach($errors as $error): ?>
+            <li><?php echo $error;  ?></li>
+        <?php endforeach; ?>
+        </ul>
+    </div>
+<?php else: ?>
+    <?php if (isset($bookies) && count($bookies)): ?>
+    <div class="card widefat" style="max-width: 100%;">
+        <h3>Bookies</h3>
+        <table>
+            <thead>
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>Name</td>
+                    <td>URL / URL(es)</td>
+                    <td>License</td>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach($bookies as $bookie): ?>
+                <tr>
+                    <td><img class="img-resposive" src="<?php echo $bookie['logo']; ?>" ></td>
+                    <td><?php echo $bookie['nombre']; ?></td>
+                    <td><?php echo $bookie['url']; ?> <br> <?php echo $bookie['urles']; ?> </td>
+                    <td><?php echo $bookie['licencia'] ? 'YES' : 'NO'; ?> </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+
 </div>
+<?php endif; ?>
