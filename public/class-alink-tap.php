@@ -29,7 +29,7 @@ class Alink_Tap {
      *
      * @var     string
      */
-    const VERSION = '1.2.2';
+    const VERSION = '1.2.3';
 
     /**
      *
@@ -340,6 +340,7 @@ class Alink_Tap {
      * @since   1.0.1
      * @updated 1.1.11
      * @updated 1.2
+     * @updated 1.2.3
      *
      * @param string $content
      * @param bool $simple
@@ -410,14 +411,14 @@ class Alink_Tap {
                 }
 
                 // first, let's check whether we've got a "target" attribute specified.
-
-                if (false !== strpos($url, ' ')) {    // Let's not waste CPU resources unless we see a ' ' in the URL:
+                $target = ' target="_blank"';
+                /*if (false !== strpos($url, ' ')) {    // Let's not waste CPU resources unless we see a ' ' in the URL:
                     $target = trim(substr($url, strpos($url, ' ')));
                     $target = ' target="' . $target . '"';
                     $url = substr($url, 0, strpos($url, ' '));
                 } else {
                     $target = '';
-                }
+                }*/
 
                 // let's escape any '&' in the URL.
 
@@ -459,7 +460,7 @@ class Alink_Tap {
 
                 if (1 != $plurals) {     // we do basically the same thing whether we're looking for plurals or not. Let's do non-plurals option first:
 
-                    $content = preg_replace('|(?<=[\s>;\'])(' . $keyword . ')(?=[\s<&,!\';:\./])|i', '<a href="' . $url . '" class="alink-tp"' . $target . $title . ' rel="nofollow">$1</a>', $content/*, 1*/);    // that "1" at the end limits it to replacing the keyword only once per post => We quit this in TAP!!!!!
+                    $content = preg_replace('|(?<=[\s>;\'])(' . $keyword . ')(?=[\s<&,!\';:\./])|i', '<a href="' . $url . '" class="alink-tap"' . $target . $title . ' rel="nofollow">$1</a>', $content); /*, 1*/    // that "1" at the end limits it to replacing the keyword only once per post => We quit this in TAP!!!!!
 
                     /* some notes about that regular expression to make modifying it easier for you if you're new to these things:
 
@@ -486,7 +487,7 @@ class Alink_Tap {
 
                     // this regex is almost identical to the non-plurals one, we just add an s? where necessary:
 
-                    $content = preg_replace('|(?<=[\s>;\'])(' . $keyword . 's?)(?=[\s<&,!\';:\./])|i', '<a href="' . $url . '" class="alink-tp"' . $target . $title . ' rel="nofollow">$1</a>', $content/*, 1*/);    // that "1" at the end limits it to replacing once per post.
+                    $content = preg_replace('|(?<=[\s>;\'])(' . $keyword . 's?)(?=[\s<&,!\';:\./])|i', '<a href="' . $url . '" class="alink-tap"' . $target . $title . ' rel="nofollow">$1</a>', $content); /*, 1*/    // that "1" at the end limits it to replacing once per post.
 
                 }
 

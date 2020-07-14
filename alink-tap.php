@@ -8,17 +8,17 @@
  * @copyright 2014 Alain Sanchez
  *
  * @wordpress-plugin
- * Plugin Name:       Alink Tap
- * Plugin URI:       http://www.todoapuestas.org
- * Description:       This plugin is a customization of <strong>KB Linker vTAP</strong> by Adam R. Brown to <strong>TodoApuestas.org</strong>. Looks for user-defined phrases in posts and automatically links them. Example: Link every occurrence of "TodoApuestas" to todoapuestas.org. It execute syncronizations task with TodoApuestas.org Server.
- * Version:           1.2.2
- * Author:       Alain Sanchez
- * Author URI:       http://www.linkedin.com/in/mrbrazzi/
- * Text Domain:       alink-tap
- * License:           GPL-2.0+
- * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * Domain Path:       /languages
- * GitHub Plugin URI: https://github.com/<owner>/<repo>
+ * Plugin Name:         Alink Tap
+ * Plugin URI:          https://wordpress.org/plugins/alink-tap/
+ * Description:         This plugin is a customization of <strong>KB Linker vTAP</strong> by Adam R. Brown to <strong>TodoApuestas.org</strong>. Looks for user-defined phrases in posts and automatically links them. Example: Link every occurrence of "TodoApuestas" to todoapuestas.org. It execute syncronizations task with TodoApuestas.org Server.
+ * Version:             1.2.3
+ * Author:              Alain Sanchez <luka.ghost@gmail.com>
+ * Author URI:          http://www.linkedin.com/in/mrbrazzi/
+ * Text Domain:         alink-tap
+ * License:             GPL-2.0+
+ * License URI:         http://www.gnu.org/licenses/gpl-2.0.txt
+ * Domain Path:         /languages
+ * GitHub Plugin URI:   https://github.com/mrbrazzi/alinkt-tap
  * WordPress-Plugin-Boilerplate: v2.6.1
  */
 
