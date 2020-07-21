@@ -25,11 +25,11 @@ class Alink_Tap {
      * Plugin version, used for cache-busting of style and script file references.
      *
      * @since   1.1.12
-     * @updated 1.2.1
+     * @updated 1.2.4
      *
      * @var     string
      */
-    const VERSION = '1.2.3';
+    const VERSION = '1.2.4';
 
     /**
      *
@@ -354,9 +354,9 @@ class Alink_Tap {
             return $content;
         }
 
-        $cache_key = $simple ? 'alink_tap_content_simple_'. $post->ID : 'alink_tap_content_'. $post->ID;
-        $cached_content = wp_cache_get($cache_key, 'the_content');
-        if (false !== $cached_content) {
+        $cache_key = $simple ? 'alink_tap_content_simple_'. sanitize_text_field($content) : 'alink_tap_content_'. $post->ID;
+        $cached_content = wp_cache_get($cache_key);
+        if ($cached_content) {
             return $cached_content;
         }
 
@@ -380,9 +380,9 @@ class Alink_Tap {
 
             $currentUrl = site_url(); // may not work on all hosting setups.
 
-            $country = apply_filters('rest_client_tap_check_ip', 'TAP_ALINK_TAP', null);
+//            $country = apply_filters('rest_client_tap_check_ip', 'TAP_ALINK_TAP', null);
+            $country = 'Spain';
 
-//        foreach ($pairs as $keyword => $url_array){
             foreach ($list_site_links as $house) {
                 $keyword = '';
                 if (isset($house['nombre']))
@@ -397,13 +397,13 @@ class Alink_Tap {
                     $url = $house['url'];
                 }
 
-//            if (in_array( $url, $usedUrls )) // don't link to the same URL more than once
-//                continue;
+//                if (in_array( $url, $usedUrls )) // don't link to the same URL more than once
+//                    continue;
 //
-//            if (strpos( $content, $url )){ // we've already used this URL, or it was manually inserted by author into post
-//                $usedUrls[] = $url;
-//                continue;
-//            }
+//                if (strpos( $content, $url )){ // we've already used this URL, or it was manually inserted by author into post
+//                    $usedUrls[] = $url;
+//                    continue;
+//                }
 
                 if ($url == $currentUrl) { // don't link a page to itself
                     $usedUrls[] = $url;
