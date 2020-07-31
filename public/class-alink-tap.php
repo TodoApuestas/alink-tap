@@ -44,7 +44,7 @@ class Alink_Tap {
      *
      * @var      string
      */
-    protected string $plugin_slug = 'alink-tap';
+    protected $plugin_slug = 'alink-tap';
 
     /**
      * Instance of this class.
@@ -55,10 +55,10 @@ class Alink_Tap {
      */
     protected static $instance = null;
 
-    private array $default_options;
+    private $default_options;
 
-    private array $alink_tap_title_text;
-    private array $alink_tap_special_chars;
+    private $alink_tap_title_text;
+    private $alink_tap_special_chars;
 
 
     /**
