@@ -25,11 +25,11 @@ class Alink_Tap {
      * Plugin version, used for cache-busting of style and script file references.
      *
      * @since   1.1.12
-     * @updated 1.2.4
+     * @updated 1.2.5
      *
      * @var     string
      */
-    const VERSION = '1.2.4';
+    const VERSION = '1.2.5';
 
     /**
      *
@@ -44,7 +44,7 @@ class Alink_Tap {
      *
      * @var      string
      */
-    protected $plugin_slug = 'alink-tap';
+    protected string $plugin_slug = 'alink-tap';
 
     /**
      * Instance of this class.
@@ -55,7 +55,11 @@ class Alink_Tap {
      */
     protected static $instance = null;
 
-    private $default_options;
+    private array $default_options;
+
+    private array $alink_tap_title_text;
+    private array $alink_tap_special_chars;
+
 
     /**
      * Initialize the plugin by setting localization and loading public scripts
@@ -64,6 +68,31 @@ class Alink_Tap {
      * @since     1.0.0
      */
     private function __construct() {
+
+        $this->alink_tap_title_text = array(
+            'before' => __('Hacer clic aqui para mas informacion', 'alink-tap').' ', // default: 'More about '
+            'after' => ' &raquo;',	// default: '$raquo;' (an arrow pointing to the right)
+        );
+
+        /*
+         * special characters for foreign languages. Add any you want to the array below.
+         * Char goes on left, HTML entity on right. The Spanish codes are here as examples.
+         * See http://www.w3schools.com/tags/ref_entities.asp for HTML entities.
+         */
+        $this->alink_tap_special_chars = array(
+            'á' => '&#225;',
+            'Á' => '&#193;',
+            'é' => '&#233;',
+            'É' => '&#201;',
+            'í' => '&#237;',
+            'Í' => '&#205;',
+            'ó' => '&#243;',
+            'Ó' => '&#211;',
+            'ú' => '&#250;',
+            'Ú' => '&#218;',
+            'ñ' => '&#241;',
+            'Ñ' => '&#209;'
+        );
 
         // Load plugin text domain
         add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
@@ -347,7 +376,7 @@ class Alink_Tap {
      * @return string
      */
     public function execute_linker($content, $simple = false) {
-        global $alink_tap_special_chars, $alink_tap_title_text, $post;
+        global $post;
         $pairs = $text = $plurals = $licencias = null;
 
         if (!in_the_loop() && !is_main_query() && $simple === false) {
@@ -366,8 +395,8 @@ class Alink_Tap {
                 return $content;
 
             // let's make use of that special chars setting.
-            if (is_array($alink_tap_special_chars)) {
-                foreach ($alink_tap_special_chars as $char => $code) {
+            if (is_array($this->alink_tap_special_chars)) {
+                foreach ($this->alink_tap_special_chars as $char => $code) {
                     $content = str_replace($code, $char, $content);
                 }
             }
@@ -385,16 +414,22 @@ class Alink_Tap {
 
             foreach ($list_site_links as $house) {
                 $keyword = '';
-                if (isset($house['nombre']))
+                if (isset($house) && in_array('nombre', $house) && isset($house['nombre'])){
                     $keyword = $house['nombre'];
+                }
 
                 // Compruebo si es un usuario de Spain. Si lo es, compruebo si la key es con licencia_esp, si no, paso al siguiente
 
-                if (!empty($country) && strcmp($country, 'Spain') == 0 && !empty($house)) {
-                    $url = $house['urles'];
-                    if (!$house['licencia']) continue;
+                $url = null;
+                if (!empty($country) && strcmp($country, 'Spain') === 0 && isset($house)) {
+                    $url = in_array('urles', $house) && isset($house['urles']) ? $house['urles'] : null;
+                    if (!in_array('licencia', $house)) continue;
                 } else {
-                    $url = $house['url'];
+                    $url = in_array('url', $house) && isset($house['url']) ? $house['url'] : null;
+                }
+
+                if (is_null($url)) {
+                    continue;
                 }
 
 //                if (in_array( $url, $usedUrls )) // don't link to the same URL more than once
@@ -405,7 +440,7 @@ class Alink_Tap {
 //                    continue;
 //                }
 
-                if ($url == $currentUrl) { // don't link a page to itself
+                if (!is_null($url) && strcmp($url, $currentUrl) === 0) { // don't link a page to itself
                     $usedUrls[] = $url;
                     continue;
                 }
@@ -454,7 +489,7 @@ class Alink_Tap {
                 // set the title attribute:
 
                 if (ALINK_TAP_USE_TITLES)
-                    $title = ' title="' . $alink_tap_title_text['before'] . $alink_tap_title_text['after'] . '"';
+                    $title = ' title="' . $this->alink_tap_title_text['before'] . $this->alink_tap_title_text['after'] . '"';
 
                 // now that we've taken the keyword out of any links it appears in, let's look for the keyword elsewhere.
 
