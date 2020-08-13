@@ -29,7 +29,7 @@ class Alink_Tap {
      *
      * @var     string
      */
-    const VERSION = '1.2.6';
+    const VERSION = '1.2.7';
 
     /**
      *
@@ -125,7 +125,7 @@ class Alink_Tap {
         add_action( 'wp' , array( $this, 'active_remote_sync'));
         add_action( 'alink_tap_hourly_remote_sync', array( $this, 'remote_sync' ) );
 
-        add_filter( 'alink_tap_execute_linker', array( $this, 'execute_linker' ), 10, 2 );
+        add_filter( 'alink_tap_execute_linker', array( $this, 'execute_linker' ), 10, 3 );
 
     }
 
@@ -369,12 +369,13 @@ class Alink_Tap {
      * @updated 1.1.11
      * @updated 1.2
      * @updated 1.2.3
+     * @updated 1.2.7
      *
      * @param string $content
      * @param bool $simple
      * @return string
      */
-    public function execute_linker($content, $simple = false) {
+    public function execute_linker($content, $excerpt = false, $simple = false) {
         global $post;
         $pairs = $text = $plurals = $licencias = null;
 
@@ -382,7 +383,7 @@ class Alink_Tap {
             return $content;
         }
 
-        $cache_key = $simple ? 'alink_tap_content_simple_'. sanitize_text_field($content) : 'alink_tap_content_'. $post->ID;
+        $cache_key = $simple ? 'alink_tap_content_simple_' . sanitize_text_field($content) : ($excerpt ? 'alink_tap_excerpt_' . $post->ID : 'alink_tap_content_' . $post->ID);
         $cached_content = wp_cache_get($cache_key);
         if ($cached_content) {
             return $cached_content;

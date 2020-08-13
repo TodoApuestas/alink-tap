@@ -11,7 +11,7 @@
  * Plugin Name:         Alink Tap
  * Plugin URI:          https://wordpress.org/plugins/alink-tap/
  * Description:         This plugin is a customization of <strong>KB Linker vTAP</strong> by Adam R. Brown to <strong>TodoApuestas.org</strong>. Looks for user-defined phrases in posts and automatically links them. Example: Link every occurrence of "TodoApuestas" to todoapuestas.org. It execute syncronizations task with TodoApuestas.org Server.
- * Version:             1.2.6
+ * Version:             1.2.7
  * Author:              Alain Sanchez <luka.ghost@gmail.com>
  * Author URI:          http://www.linkedin.com/in/mrbrazzi/
  * Text Domain:         alink-tap
