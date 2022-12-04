@@ -25,11 +25,10 @@ class Alink_Tap {
      * Plugin version, used for cache-busting of style and script file references.
      *
      * @since   1.1.12
-     * @updated 1.2.5
      *
      * @var     string
      */
-    const VERSION = '1.2.7';
+    const VERSION = '1.3.0';
 
     /**
      *
@@ -126,6 +125,13 @@ class Alink_Tap {
         add_action( 'alink_tap_hourly_remote_sync', array( $this, 'remote_sync' ) );
 
         add_filter( 'alink_tap_execute_linker', array( $this, 'execute_linker' ), 10, 3 );
+
+        /**
+         * @since 1.3.0
+         */
+        add_filter( 'the_content', array( $this, 'execute_the_content' ), 999 );
+        add_filter( 'the_excerpt', array( $this, 'execute_the_excerpt' ), 999, 2 );
+        add_filter( 'get_the_excerpt', array( $this, 'execute_get_the_excerpt'), 999, 2 );
 
     }
 
@@ -542,5 +548,47 @@ class Alink_Tap {
 
     public function get_default_options() {
         return $this->default_options;
+    }
+
+    /**
+     * @since 1.3.0
+     *
+     * @param $content
+     * @return string
+     */
+    private function execute_the_content($content) {
+        return $this->execute_linker($content);
+    }
+
+    /**
+     * @since 1.3.0
+     *
+     * @param $excerpt
+     * @param $post
+     * @return string
+     */
+    private function execute_the_excerpt($excerpt, $post)
+    {
+        wp_trim_excerpt();
+        $excerpt = epic_truncate( $excerpt, (int)get_theme_mod('epic_excerpt_truncate', 150), true );
+        $excerpt = force_balance_tags($excerpt);
+
+        return $this->execute_linker($excerpt, true );
+    }
+
+    /**
+     * @since 1.3.0
+     *
+     * @param $excerpt
+     * @param $post
+     * @return string
+     */
+    private function execute_get_the_excerpt($excerpt, $post) {
+        if(empty($excerpt)){
+            $excerpt = get_the_content();
+            $excerpt = strip_tags( $excerpt );
+        }
+
+        return $this->execute_the_excerpt($excerpt, $post);
     }
 }

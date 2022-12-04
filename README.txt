@@ -3,8 +3,8 @@ Contributors: mrbrazzi, todoapuestas
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=brazzisoft.com@gmail.com&lc=US&item_name=For%20improve%20Wordpress%20plugin%20Alink%20Tap&currency_code=USD&no_note=0&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHostedGuest
 Tags: link
 Requires at least: 3.5.1
-Tested up to: 5.4.2
-Stable tag: 1.2.7
+Tested up to: 6.1.1
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -91,6 +91,9 @@ Nothing for now
 
 
 == Changelog ==
+
+= 1.3.0 =
+* Improve the linker execution with subscriptions to filters: the_content, the_excerpt, and get_the_excerpt
 
 = 1.2.7 =
 * Fixed cache problem detected
