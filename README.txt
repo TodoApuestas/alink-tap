@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=brazz
 Tags: link
 Requires at least: 3.5.1
 Tested up to: 6.1.1
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -91,6 +91,9 @@ Nothing for now
 
 
 == Changelog ==
+
+= 1.3.1 =
+* Fixed a bug detected
 
 = 1.3.0 =
 * Improve the linker execution with subscriptions to filters: the_content, the_excerpt, and get_the_excerpt

@@ -28,7 +28,7 @@ class Alink_Tap {
      *
      * @var     string
      */
-    const VERSION = '1.3.0';
+    const VERSION = '1.3.1';
 
     /**
      *
@@ -130,8 +130,8 @@ class Alink_Tap {
          * @since 1.3.0
          */
         add_filter( 'the_content', array( $this, 'execute_the_content' ), 999 );
-        add_filter( 'the_excerpt', array( $this, 'execute_the_excerpt' ), 999, 2 );
-        add_filter( 'get_the_excerpt', array( $this, 'execute_get_the_excerpt'), 999, 2 );
+        add_filter( 'the_excerpt', array( $this, 'execute_the_excerpt' ), 999 );
+        add_filter( 'get_the_excerpt', array( $this, 'execute_get_the_excerpt'), 999 );
 
     }
 
@@ -552,22 +552,24 @@ class Alink_Tap {
 
     /**
      * @since 1.3.0
+     * @updated 1.3.1
      *
      * @param $content
      * @return string
      */
-    private function execute_the_content($content) {
+    public function execute_the_content($content) {
         return $this->execute_linker($content);
     }
 
     /**
      * @since 1.3.0
+     * @updated 1.3.1
      *
      * @param $excerpt
      * @param $post
      * @return string
      */
-    private function execute_the_excerpt($excerpt, $post)
+    public function execute_the_excerpt($excerpt, $post = null)
     {
         wp_trim_excerpt();
         $excerpt = epic_truncate( $excerpt, (int)get_theme_mod('epic_excerpt_truncate', 150), true );
@@ -578,12 +580,13 @@ class Alink_Tap {
 
     /**
      * @since 1.3.0
+     * @updated 1.3.1
      *
      * @param $excerpt
      * @param $post
      * @return string
      */
-    private function execute_get_the_excerpt($excerpt, $post) {
+    public function execute_get_the_excerpt($excerpt, $post = null) {
         if(empty($excerpt)){
             $excerpt = get_the_content();
             $excerpt = strip_tags( $excerpt );
